@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@feathersjs/feathers':
+        specifier: ^5.0.35
+        version: 5.0.35
     devDependencies:
       '@feathers-community/eslint-config':
         specifier: ^0.0.8
@@ -236,6 +240,18 @@ packages:
     resolution: {integrity: sha512-wajVInThVxlLhC7u2S9xz82JS8Pt9pqEfsA3gA3NzH75hjUUGnLyUckElH5ZvcW36dnomv2w6uGHDOLl5aBuhA==}
     peerDependencies:
       eslint: ^9.0.0
+
+  '@feathersjs/commons@5.0.35':
+    resolution: {integrity: sha512-YYk3SRLGcM9TPHsd2mGmTdFeZORmv5wa1MRCvmEUwzcsFIPWbq4F6ddFgqKUely216RvPumwyjV9U+MasROesQ==}
+    engines: {node: '>= 12'}
+
+  '@feathersjs/feathers@5.0.35':
+    resolution: {integrity: sha512-1T6DSQ97LJGmgS5NTu1Oe/Ef1zLgoqYDNAdj67UMNC5Vk7I0F8rohgQcaOOUp8DlKNkXPFWX/z+AXJM4DhkCHQ==}
+    engines: {node: '>= 12'}
+
+  '@feathersjs/hooks@0.9.0':
+    resolution: {integrity: sha512-kLfWnuhbC25CPkR1/TDcVs0rSiv0JLNxrpUivLwc7FUnkyeciRi5VOmC1SOzL2SOagcozu3+m4VQiONyzgfY7w==}
+    engines: {node: '>= 14'}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -889,6 +905,10 @@ packages:
   esutils@2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
+
+  events@3.3.0:
+    resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
+    engines: {node: '>=0.8.x'}
 
   execa@1.0.0:
     resolution: {integrity: sha512-adbxcyWV46qiHyvSp50TKt05tB4tK3HcmF7/nxfAdhnox83seTDbwnaqKO4sXRy7roHAIFqJP/Rw/AuEbX61LA==}
@@ -1729,6 +1749,16 @@ snapshots:
       - supports-color
       - typescript
 
+  '@feathersjs/commons@5.0.35': {}
+
+  '@feathersjs/feathers@5.0.35':
+    dependencies:
+      '@feathersjs/commons': 5.0.35
+      '@feathersjs/hooks': 0.9.0
+      events: 3.3.0
+
+  '@feathersjs/hooks@0.9.0': {}
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -2385,6 +2415,8 @@ snapshots:
       '@types/estree': 1.0.8
 
   esutils@2.0.3: {}
+
+  events@3.3.0: {}
 
   execa@1.0.0:
     dependencies:

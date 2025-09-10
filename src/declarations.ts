@@ -15,6 +15,8 @@ export type AdapterTestName =
   | AdapterMethodsTestName
   | AdapterSyntaxTestName
 
+export type AdapterTestMap = Record<AdapterTestName, boolean>
+
 export type AdapterBasicTestName =
   | '.id'
   | '.options'

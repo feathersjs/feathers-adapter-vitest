@@ -1,20 +1,28 @@
+import type { Application } from '@feathersjs/feathers'
 import basicTests from './basic.js'
-import type { AdapterTestName } from './declarations.js'
+import type { AdapterTestMap, AdapterTestName } from './declarations.js'
 import methodTests from './methods.js'
 import syntaxTests from './syntax.js'
 import { describe, it, afterAll } from 'vitest'
 
-export const defineTestSuite = (testNames: AdapterTestName[]) => {
-  return (app: any, errors: any, serviceName: any, idProp = 'id') => {
-    if (!serviceName) {
-      throw new Error('You must pass a service name')
-    }
+export type TestSuiteOptions = {
+  app: Application
+  serviceName: string
+  /**
+   * @default 'id'
+   */
+  idProp?: string
+}
+
+export const defineTestSuite = (testMap?: AdapterTestMap) => {
+  return (options: TestSuiteOptions) => {
+    const { app, serviceName, idProp = 'id' } = options
 
     const skippedTests: AdapterTestName[] = []
     const allTests: AdapterTestName[] = []
 
     const test = (name: AdapterTestName, runner: any) => {
-      const skip = !testNames.includes(name)
+      const skip = testMap ? !testMap[name] : false
       const its = skip ? it.skip : it
 
       if (skip) {
@@ -28,13 +36,6 @@ export const defineTestSuite = (testNames: AdapterTestName[]) => {
 
     describe(`Adapter tests for '${serviceName}' service with '${idProp}' id property`, () => {
       afterAll(() => {
-        testNames.forEach((name) => {
-          if (!allTests.includes(name)) {
-            console.error(
-              `WARNING: '${name}' test is not part of the test suite`,
-            )
-          }
-        })
         if (skippedTests.length) {
           console.log(
             `\nSkipped the following ${skippedTests.length} Feathers adapter test(s) out of ${allTests.length} total:`,
@@ -43,9 +44,9 @@ export const defineTestSuite = (testNames: AdapterTestName[]) => {
         }
       })
 
-      basicTests(test, app, errors, serviceName, idProp)
-      methodTests(test, app, errors, serviceName, idProp)
-      syntaxTests(test, app, errors, serviceName, idProp)
+      basicTests({ test, app, serviceName, idProp })
+      methodTests({ test, app, serviceName, idProp })
+      syntaxTests({ test, app, serviceName, idProp })
     })
   }
 }

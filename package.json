@@ -7,6 +7,14 @@
     "feathers"
   ],
   "license": "MIT",
+  "author": "Feathers Community",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/feathers-community/feathers-adapter-vitest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/feathers-community/feathers-adapter-vitest/issues"
+  },
   "type": "module",
   "funding": {
     "type": "opencollective",
@@ -15,8 +23,8 @@
   "engines": {
     "node": ">= 22"
   },
-  "main": "dist/",
-  "types": "dist/",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -38,6 +46,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "dependencies": {
+    "@feathersjs/feathers": "^5.0.35"
+  },
   "devDependencies": {
     "@feathers-community/eslint-config": "^0.0.8",
     "@tsconfig/node22": "^22.0.2",
@@ -49,5 +60,6 @@
   },
   "peerDependencies": {
     "vitest": "^3.0.0"
-  }
+  },
+  "packageManager": "pnpm@10.12.3"
 }
