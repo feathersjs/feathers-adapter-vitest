@@ -1,14 +1,18 @@
 import assert from 'node:assert'
 import type { AdapterSyntaxTest } from './declarations.js'
 import { describe, beforeEach, afterEach } from 'vitest'
+import type { Application } from '@feathersjs/feathers'
 
-export default (
-  test: AdapterSyntaxTest,
-  app: any,
-  _errors: any,
-  serviceName: string,
-  idProp: string,
-) => {
+type SyntaxTestOptions = {
+  app: Application
+  test: AdapterSyntaxTest
+  serviceName: string
+  idProp: string
+}
+
+export default (options: SyntaxTestOptions) => {
+  const { test, app, serviceName, idProp } = options
+
   describe('Query Syntax', () => {
     let bob: any
     let alice: any

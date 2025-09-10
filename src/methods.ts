@@ -1,14 +1,18 @@
 import assert from 'node:assert'
 import type { AdapterMethodsTest } from './declarations.js'
 import { describe, beforeEach, afterEach, beforeAll } from 'vitest'
+import type { Application } from '@feathersjs/feathers'
 
-export default (
-  test: AdapterMethodsTest,
-  app: any,
-  _errors: any,
-  serviceName: string,
-  idProp: string,
-) => {
+type MethodTestOptions = {
+  app: Application
+  test: AdapterMethodsTest
+  serviceName: string
+  idProp: string
+}
+
+export default (options: MethodTestOptions) => {
+  const { test, app, serviceName, idProp } = options
+
   describe(' Methods', () => {
     let doug: any
     let service: any
@@ -583,8 +587,13 @@ export default (
 
       test('.patch multi query same', async () => {
         const service = app.service(serviceName)
-        const multiBefore = service.options.multi
+        // @ts-expect-error options may not exist
+        const multiBefore = service.options?.multi
 
+        // @ts-expect-error options may not exist
+        service.options ??= {}
+
+        // @ts-expect-error options may not exist
         service.options.multi = true
 
         const params = {
@@ -616,13 +625,16 @@ export default (
         await service.remove(dave[idProp])
         await service.remove(david[idProp])
 
+        // @ts-expect-error options may not exist
         service.options.multi = multiBefore
       })
 
       test('.patch multi query changed', async () => {
         const service = app.service(serviceName)
+        // @ts-expect-error options may not exist
         const multiBefore = service.options.multi
 
+        // @ts-expect-error options may not exist
         service.options.multi = true
 
         const params = {
@@ -654,6 +666,7 @@ export default (
         await service.remove(dave[idProp])
         await service.remove(david[idProp])
 
+        // @ts-expect-error options may not exist
         service.options.multi = multiBefore
       })
 
@@ -818,6 +831,7 @@ export default (
       beforeAll(() => {
         throwing = Object.assign(Object.create(app.service(serviceName)), {
           get store() {
+            // @ts-expect-error just ignore it for now
             return app.service(serviceName).store
           },
 
@@ -842,7 +856,8 @@ export default (
         })
       })
 
-      test('internal .find', () => app.service(serviceName).find.call(throwing))
+      test('internal .find', () =>
+        (app as any).service(serviceName).find.call(throwing))
 
       test('internal .get', () => service.get.call(throwing, doug[idProp]))
 

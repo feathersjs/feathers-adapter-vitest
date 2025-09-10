@@ -1,14 +1,18 @@
 import assert from 'node:assert'
 import { describe, beforeEach, it } from 'vitest'
 import type { AdapterBasicTest } from './declarations.js'
+import type { Application } from '@feathersjs/feathers'
 
-export default (
-  test: AdapterBasicTest,
-  app: any,
-  _errors: any,
-  serviceName: string,
-  idProp: string,
-) => {
+type BasicTestOptions = {
+  app: Application
+  test: AdapterBasicTest
+  serviceName: string
+  idProp: string
+}
+
+export default (options: BasicTestOptions) => {
+  const { test, app, serviceName, idProp } = options
+
   describe('Basic Functionality', () => {
     let service: any
 
