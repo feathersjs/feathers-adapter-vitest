@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@feathersjs/errors':
+        specifier: ^5.0.35
+        version: 5.0.35
       '@feathersjs/feathers':
         specifier: ^5.0.35
         version: 5.0.35
@@ -243,6 +246,10 @@ packages:
 
   '@feathersjs/commons@5.0.35':
     resolution: {integrity: sha512-YYk3SRLGcM9TPHsd2mGmTdFeZORmv5wa1MRCvmEUwzcsFIPWbq4F6ddFgqKUely216RvPumwyjV9U+MasROesQ==}
+    engines: {node: '>= 12'}
+
+  '@feathersjs/errors@5.0.35':
+    resolution: {integrity: sha512-J8ulAndEPUFTcPiGR0zO3VfnZqw1nL5BBEmFERRMlxYRCvBVwXPruOGpSEA/x2BY463UYTHD9j9Rj5lfGT62OQ==}
     engines: {node: '>= 12'}
 
   '@feathersjs/feathers@5.0.35':
@@ -1750,6 +1757,8 @@ snapshots:
       - typescript
 
   '@feathersjs/commons@5.0.35': {}
+
+  '@feathersjs/errors@5.0.35': {}
 
   '@feathersjs/feathers@5.0.35':
     dependencies:

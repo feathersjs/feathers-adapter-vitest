@@ -2,6 +2,7 @@ import assert from 'node:assert'
 import type { AdapterMethodsTest } from './declarations.js'
 import { describe, beforeEach, afterEach, beforeAll } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
+import { MethodNotAllowed, NotFound } from '@feathersjs/errors'
 
 type MethodTestOptions = {
   app: Application
@@ -61,31 +62,16 @@ export default (options: MethodTestOptions) => {
       })
 
       test('.get + id + query', async () => {
-        try {
-          await service.get(doug[idProp], {
-            query: { name: 'Tester' },
-          })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () => service.get(doug[idProp], { query: { name: 'Tester' } }),
+          NotFound,
+        )
       })
 
       test('.get + NotFound', async () => {
-        try {
+        await assert.rejects(async () => {
           await service.get('568225fbfe21222432e836ff')
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Error is a NotFound Feathers error',
-          )
-        }
+        }, NotFound)
       })
 
       test('.get + id + query id', async () => {
@@ -94,18 +80,13 @@ export default (options: MethodTestOptions) => {
           age: 12,
         })
 
-        try {
-          await service.get(doug[idProp], {
-            query: { [idProp]: alice[idProp] },
-          })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.get(doug[idProp], {
+              query: { [idProp]: alice[idProp] },
+            }),
+          NotFound,
+        )
 
         await service.remove(alice[idProp])
       })
@@ -142,31 +123,20 @@ export default (options: MethodTestOptions) => {
       })
 
       test('.remove + id + query', async () => {
-        try {
-          await service.remove(doug[idProp], {
-            query: { name: 'Tester' },
-          })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.remove(doug[idProp], {
+              query: { name: 'Tester' },
+            }),
+          NotFound,
+        )
+
+        const stillExists = await service.get(doug[idProp])
+        assert.ok(stillExists, 'Doug still exists')
       })
 
       test('.remove + multi', async () => {
-        try {
-          await service.remove(null)
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'MethodNotAllowed',
-            'Removing multiple without option set throws MethodNotAllowed',
-          )
-        }
+        await assert.rejects(() => service.remove(null), MethodNotAllowed)
 
         service.options.multi = ['remove']
 
@@ -266,18 +236,16 @@ export default (options: MethodTestOptions) => {
           age: 12,
         })
 
-        try {
-          await service.remove(doug[idProp], {
-            query: { [idProp]: alice[idProp] },
-          })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.remove(doug[idProp], {
+              query: { [idProp]: alice[idProp] },
+            }),
+          NotFound,
+        )
+
+        const stillExists = await service.get(doug[idProp])
+        assert.ok(stillExists, 'Doug still exists')
 
         await service.remove(alice[idProp])
       })
@@ -322,60 +290,49 @@ export default (options: MethodTestOptions) => {
         )
         assert.strictEqual(data.name, 'Dougler', 'data.name matches')
         assert.ok(!data.age, 'data.age is falsy')
+
+        // TODO: service.get(doug[idProp]) should have age set to 10
       })
 
       test('.update + id + query', async () => {
-        try {
-          await service.update(
-            doug[idProp],
-            {
-              name: 'Dougler',
-            },
-            {
-              query: { name: 'Tester' },
-            },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.update(
+              doug[idProp],
+              {
+                name: 'Dougler',
+              },
+              {
+                query: { name: 'Tester' },
+              },
+            ),
+          NotFound,
+        )
       })
 
       test('.update + NotFound', async () => {
-        try {
-          await service.update('568225fbfe21222432e836ff', {
-            name: 'NotFound',
-          })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Error is a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.update('568225fbfe21222432e836ff', {
+              name: 'NotFound',
+            }),
+          NotFound,
+        )
       })
 
       test('.update + query + NotFound', async () => {
         const dave = await service.create({ name: 'Dave' })
-        try {
-          await service.update(
-            dave[idProp],
-            { name: 'UpdatedDave' },
-            { query: { name: 'NotDave' } },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Error is a NotFound Feathers error',
-          )
-        }
+
+        await assert.rejects(
+          () =>
+            service.update(
+              dave[idProp],
+              { name: 'UpdatedDave' },
+              { query: { name: 'NotDave' } },
+            ),
+          NotFound,
+        )
+
         await service.remove(dave[idProp])
       })
 
@@ -385,25 +342,20 @@ export default (options: MethodTestOptions) => {
           age: 12,
         })
 
-        try {
-          await service.update(
-            doug[idProp],
-            {
-              name: 'Dougler',
-              age: 33,
-            },
-            {
-              query: { [idProp]: alice[idProp] },
-            },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.update(
+              doug[idProp],
+              {
+                name: 'Dougler',
+                age: 33,
+              },
+              {
+                query: { [idProp]: alice[idProp] },
+              },
+            ),
+          NotFound,
+        )
 
         await service.remove(alice[idProp])
       })
@@ -444,40 +396,28 @@ export default (options: MethodTestOptions) => {
         )
         assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
         assert.ok(!data.age, 'data.age is falsy')
+
+        // TODO: service.get(doug[idProp]) should have age set to 10
       })
 
       test('.patch + id + query', async () => {
-        try {
-          await service.patch(
-            doug[idProp],
-            {
-              name: 'id patched doug',
-            },
-            {
-              query: { name: 'Tester' },
-            },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.patch(
+              doug[idProp],
+              {
+                name: 'id patched doug',
+              },
+              {
+                query: { name: 'Tester' },
+              },
+            ),
+          NotFound,
+        )
       })
 
       test('.patch multiple', async () => {
-        try {
-          await service.patch(null, {})
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'MethodNotAllowed',
-            'Removing multiple without option set throws MethodNotAllowed',
-          )
-        }
+        await assert.rejects(() => service.patch(null, {}), MethodNotAllowed)
 
         const params = {
           query: { created: true },
@@ -671,36 +611,26 @@ export default (options: MethodTestOptions) => {
       })
 
       test('.patch + NotFound', async () => {
-        try {
+        await assert.rejects(async () => {
           await service.patch('568225fbfe21222432e836ff', {
             name: 'PatchDoug',
           })
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Error is a NotFound Feathers error',
-          )
-        }
+        }, NotFound)
       })
 
       test('.patch + query + NotFound', async () => {
         const dave = await service.create({ name: 'Dave' })
-        try {
-          await service.patch(
-            dave[idProp],
-            { name: 'PatchedDave' },
-            { query: { name: 'NotDave' } },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Error is a NotFound Feathers error',
-          )
-        }
+
+        await assert.rejects(
+          () =>
+            service.patch(
+              dave[idProp],
+              { name: 'PatchedDave' },
+              { query: { name: 'NotDave' } },
+            ),
+          NotFound,
+        )
+
         await service.remove(dave[idProp])
       })
 
@@ -710,24 +640,19 @@ export default (options: MethodTestOptions) => {
           age: 12,
         })
 
-        try {
-          await service.patch(
-            doug[idProp],
-            {
-              age: 33,
-            },
-            {
-              query: { [idProp]: alice[idProp] },
-            },
-          )
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'NotFound',
-            'Got a NotFound Feathers error',
-          )
-        }
+        await assert.rejects(
+          () =>
+            service.patch(
+              doug[idProp],
+              {
+                age: 33,
+              },
+              {
+                query: { [idProp]: alice[idProp] },
+              },
+            ),
+          NotFound,
+        )
 
         await service.remove(alice[idProp])
       })
@@ -784,20 +709,15 @@ export default (options: MethodTestOptions) => {
         assert.strictEqual(data.name, 'William', 'data.name matches')
         assert.ok(!data.age, 'data.age is falsy')
 
+        const created = await service.get(data[idProp])
+
+        assert.strictEqual(created.age, 23, 'data.age created')
+
         await service.remove(data[idProp])
       })
 
       test('.create multi', async () => {
-        try {
-          await service.create([], {})
-          throw new Error('Should never get here')
-        } catch (error: any) {
-          assert.strictEqual(
-            error.name,
-            'MethodNotAllowed',
-            'Removing multiple without option set throws MethodNotAllowed',
-          )
-        }
+        await assert.rejects(() => service.create([]), MethodNotAllowed)
 
         const items = [
           {
