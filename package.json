@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "version": "pnpm build",
     "lint": "eslint",
     "test": "vitest run"
   },
@@ -47,6 +48,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@feathersjs/errors": "^5.0.35",
     "@feathersjs/feathers": "^5.0.35"
   },
   "devDependencies": {
