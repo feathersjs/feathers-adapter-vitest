@@ -241,7 +241,7 @@ export default (options: SyntaxTestOptions) => {
           },
         })
 
-        assert.strictEqual(data.length, 2)
+        assert.strictEqual(data.length, 2, 'correct length')
       })
     })
 
@@ -258,9 +258,9 @@ export default (options: SyntaxTestOptions) => {
 
       const data = await service.find(params)
 
-      assert.strictEqual(data.length, 2)
-      assert.strictEqual(data[0].name, 'Alice')
-      assert.strictEqual(data[1].name, 'Bob')
+      assert.strictEqual(data.length, 2, 'correct length')
+      assert.strictEqual(data[0].name, 'Alice', 'first user')
+      assert.strictEqual(data[1].name, 'Bob', 'second user')
     })
 
     test('.find + $or nested + $sort', async () => {
@@ -281,9 +281,9 @@ export default (options: SyntaxTestOptions) => {
 
       const data = await service.find(params)
 
-      assert.strictEqual(data.length, 2)
-      assert.strictEqual(data[0].name, 'Alice')
-      assert.strictEqual(data[1].name, 'Doug')
+      assert.strictEqual(data.length, 2, 'correct length')
+      assert.strictEqual(data[0].name, 'Alice', 'first user')
+      assert.strictEqual(data[1].name, 'Doug', 'second user')
     })
 
     test('.find + $and', async () => {
@@ -296,8 +296,8 @@ export default (options: SyntaxTestOptions) => {
 
       const data = await service.find(params)
 
-      assert.strictEqual(data.length, 1)
-      assert.strictEqual(data[0].name, 'Alice')
+      assert.strictEqual(data.length, 1, 'correct length')
+      assert.strictEqual(data[0].name, 'Alice', 'correct user')
     })
 
     test('.find + $and + $or', async () => {
@@ -310,8 +310,8 @@ export default (options: SyntaxTestOptions) => {
 
       const data = await service.find(params)
 
-      assert.strictEqual(data.length, 1)
-      assert.strictEqual(data[0].name, 'Alice')
+      assert.strictEqual(data.length, 1, 'correct length')
+      assert.strictEqual(data[0].name, 'Alice', 'correct user')
     })
 
     describe('params.adapter', () => {
@@ -322,8 +322,8 @@ export default (options: SyntaxTestOptions) => {
           },
         })
 
-        assert.strictEqual(page.limit, 3)
-        assert.strictEqual(page.skip, 0)
+        assert.strictEqual(page.limit, 3, 'correct limit')
+        assert.strictEqual(page.skip, 0, 'correct skip')
       })
 
       test('params.adapter + multi', async () => {
@@ -374,10 +374,10 @@ export default (options: SyntaxTestOptions) => {
           query: { $sort: { name: -1 } },
         })
 
-        assert.strictEqual(page.total, 3)
-        assert.strictEqual(page.limit, 1)
-        assert.strictEqual(page.skip, 0)
-        assert.strictEqual(page.data[0].name, 'Doug')
+        assert.strictEqual(page.total, 3, 'correct total')
+        assert.strictEqual(page.limit, 1, 'correct limit')
+        assert.strictEqual(page.skip, 0, 'correct skip')
+        assert.strictEqual(page.data[0].name, 'Doug', 'correct user')
       })
 
       test('.find + paginate + query', async () => {
@@ -388,10 +388,10 @@ export default (options: SyntaxTestOptions) => {
           },
         })
 
-        assert.strictEqual(page.total, 1)
-        assert.strictEqual(page.limit, 1)
-        assert.strictEqual(page.skip, 0)
-        assert.strictEqual(page.data[0].name, 'Doug')
+        assert.strictEqual(page.total, 1, 'correct total')
+        assert.strictEqual(page.limit, 1, 'correct limit')
+        assert.strictEqual(page.skip, 0, 'correct skip')
+        assert.strictEqual(page.data[0].name, 'Doug', 'correct user')
       })
 
       test('.find + paginate + $limit + $skip', async () => {
@@ -405,9 +405,9 @@ export default (options: SyntaxTestOptions) => {
 
         const page = await service.find(params)
 
-        assert.strictEqual(page.total, 3)
-        assert.strictEqual(page.limit, 2)
-        assert.strictEqual(page.skip, 1)
+        assert.strictEqual(page.total, 3, 'correct total')
+        assert.strictEqual(page.limit, 2, 'correct limit')
+        assert.strictEqual(page.skip, 1, 'correct skip')
         assert.strictEqual(page.data[0].name, 'Bob')
         assert.strictEqual(page.data[1].name, 'Alice')
       })
@@ -417,20 +417,20 @@ export default (options: SyntaxTestOptions) => {
           query: { $limit: 0 },
         })
 
-        assert.strictEqual(page.total, 3)
-        assert.strictEqual(page.data.length, 0)
+        assert.strictEqual(page.total, 3, 'correct total')
+        assert.strictEqual(page.data.length, 0, 'data array is empty')
       })
 
       test('.find + paginate + params', async () => {
         const page = await service.find({ paginate: { default: 3 } })
 
-        assert.strictEqual(page.limit, 3)
-        assert.strictEqual(page.skip, 0)
+        assert.strictEqual(page.limit, 3, 'correct limit')
+        assert.strictEqual(page.skip, 0, 'correct skip')
 
         const results = await service.find({ paginate: false })
 
-        assert.ok(Array.isArray(results))
-        assert.strictEqual(results.length, 3)
+        assert.ok(Array.isArray(results), 'results is an array')
+        assert.strictEqual(results.length, 3, 'correct results length')
       })
     })
   })
