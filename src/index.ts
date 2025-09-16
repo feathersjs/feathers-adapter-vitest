@@ -25,6 +25,7 @@ export type AdapterTestMap = Record<AdapterTestName, boolean>
 
 export type DefineTestSuiteOptions = {
   blacklist?: AdapterTestName[]
+  only?: AdapterTestName[]
 }
 
 export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
@@ -37,7 +38,9 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
     const test = (name: string, runner: any) => {
       const skip = defineOptions?.blacklist
         ? defineOptions.blacklist.includes(name as AdapterTestName)
-        : false
+        : defineOptions?.only
+          ? !defineOptions.only.includes(name as AdapterTestName)
+          : false
       const its = skip ? it.skip : it
 
       if (skip) {
