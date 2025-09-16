@@ -82,8 +82,8 @@ export default (options: MethodTestOptions) => {
     let doug: any
     let service: any
 
-    beforeEach(async () => {
-      service = app.service(serviceName)
+    beforeAll(async () => {
+      // test create
       doug = await app.service(serviceName).create({
         name: 'Doug',
         age: 32,
@@ -103,13 +103,18 @@ export default (options: MethodTestOptions) => {
         32,
         "simple 'create' failed (no age). Before you start to test the adapter make sure simple create works.",
       )
-    })
 
-    afterEach(async () => {
+      // test delete
+
       const items = await app.service(serviceName).find({ paginate: false })
       assert.ok(
         Array.isArray(items),
         'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
+      )
+      assert.strictEqual(
+        items.length,
+        1,
+        'find should return an item. Before you start to test the adapter maje sure simple find works.',
       )
       await Promise.all(items.map((item: any) => service.remove(item[idProp])))
       const itemsAfterRemove = await app
@@ -119,6 +124,19 @@ export default (options: MethodTestOptions) => {
         itemsAfterRemove.length === 0,
         "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
       )
+    })
+
+    beforeEach(async () => {
+      service = app.service(serviceName)
+      doug = await app.service(serviceName).create({
+        name: 'Doug',
+        age: 32,
+      })
+    })
+
+    afterEach(async () => {
+      const items = await app.service(serviceName).find({ paginate: false })
+      await Promise.all(items.map((item: any) => service.remove(item[idProp])))
     })
 
     const config = {

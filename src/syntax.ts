@@ -103,37 +103,12 @@ export default (options: SyntaxTestOptions) => {
         name: 'Alice',
         age: 19,
       })
-
-      assert.ok(
-        bob[idProp] !== null,
-        `simple 'create' failed (no ${idProp}). Before you start to test the adapter make sure simple create works.`,
-      )
-      assert.strictEqual(
-        bob.name,
-        'Bob',
-        "simple 'create' failed (no name). Before you start to test the adapter make sure simple create works.",
-      )
-      assert.strictEqual(
-        bob.age,
-        25,
-        "simple 'create' failed (no age). Before you start to test the adapter make sure simple create works.",
-      )
     })
 
     afterEach(async () => {
       const items = await service.find({ paginate: false })
-      assert.ok(
-        Array.isArray(items),
-        'find with paginate:false did not return an array. Before you start to test the adapter make sure params.paginate:false works.',
-      )
+
       await Promise.all(items.map((item: any) => service.remove(item[idProp])))
-      const itemsAfterRemove = await app
-        .service(serviceName)
-        .find({ paginate: false })
-      assert.ok(
-        itemsAfterRemove.length === 0,
-        "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
-      )
     })
 
     const config = {
