@@ -106,9 +106,9 @@ export default (options: SyntaxTestOptions) => {
     })
 
     afterEach(async () => {
-      await service.remove(bob[idProp])
-      await service.remove(alice[idProp])
-      await service.remove(doug[idProp])
+      const items = await service.find({ paginate: false })
+
+      await Promise.all(items.map((item: any) => service.remove(item[idProp])))
     })
 
     const config = {
