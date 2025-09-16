@@ -36,11 +36,16 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
     const allTests: AdapterTestName[] = []
 
     const test = (name: string, runner: any) => {
-      const skip = defineOptions?.blacklist
-        ? defineOptions.blacklist.includes(name as AdapterTestName)
-        : defineOptions?.only
-          ? !defineOptions.only.includes(name as AdapterTestName)
-          : false
+      let skip = false
+      if (defineOptions?.blacklist?.includes(name as AdapterTestName)) {
+        skip = true
+      }
+      if (
+        defineOptions?.only &&
+        !defineOptions.only.includes(name as AdapterTestName)
+      ) {
+        skip = true
+      }
       const its = skip ? it.skip : it
 
       if (skip) {
