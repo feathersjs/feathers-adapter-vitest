@@ -83,8 +83,10 @@ export default (options: MethodTestOptions) => {
     let service: any
 
     beforeAll(async () => {
+      service = app.service(serviceName)
+
       // test create
-      doug = await app.service(serviceName).create({
+      doug = await service.create({
         name: 'Doug',
         age: 32,
       })
@@ -106,7 +108,7 @@ export default (options: MethodTestOptions) => {
 
       // test delete
 
-      const items = await app.service(serviceName).find({ paginate: false })
+      const items = await service.find({ paginate: false })
       assert.ok(
         Array.isArray(items),
         'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
@@ -114,12 +116,14 @@ export default (options: MethodTestOptions) => {
       assert.strictEqual(
         items.length,
         1,
-        'find should return an item. Before you start to test the adapter maje sure simple find works.',
+        'find should return an item. Before you start to test the adapter make sure simple find works.',
+      )
+      assert.ok(
+        idProp in items[0],
+        `'find' should return an item with ${idProp}. Before you start to test the adapter make sure simple find works.`,
       )
       await Promise.all(items.map((item: any) => service.remove(item[idProp])))
-      const itemsAfterRemove = await app
-        .service(serviceName)
-        .find({ paginate: false })
+      const itemsAfterRemove = await service.find({ paginate: false })
       assert.ok(
         itemsAfterRemove.length === 0,
         "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
@@ -127,15 +131,14 @@ export default (options: MethodTestOptions) => {
     })
 
     beforeEach(async () => {
-      service = app.service(serviceName)
-      doug = await app.service(serviceName).create({
+      doug = await service.create({
         name: 'Doug',
         age: 32,
       })
     })
 
     afterEach(async () => {
-      const items = await app.service(serviceName).find({ paginate: false })
+      const items = await service.find({ paginate: false })
       await Promise.all(items.map((item: any) => service.remove(item[idProp])))
     })
 
