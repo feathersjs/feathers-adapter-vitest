@@ -1,7 +1,9 @@
 import type { Application } from '@feathersjs/feathers'
+import type { AdapterTestNameBasic } from './basic.js'
 import basicTests from './basic.js'
-import type { AdapterTestMap, AdapterTestName } from './declarations.js'
+import type { AdapterTestNameMethods } from './methods.js'
 import methodTests from './methods.js'
+import type { AdapterTestNameSyntax } from './syntax.js'
 import syntaxTests from './syntax.js'
 import { describe, it, afterAll } from 'vitest'
 
@@ -14,22 +16,35 @@ export type TestSuiteOptions = {
   idProp?: string
 }
 
-export const defineTestSuite = (testMap?: AdapterTestMap) => {
+export type AdapterTestName =
+  | AdapterTestNameBasic
+  | AdapterTestNameMethods
+  | AdapterTestNameSyntax
+
+export type AdapterTestMap = Record<AdapterTestName, boolean>
+
+export type DefineTestSuiteOptions = {
+  blacklist?: AdapterTestName[]
+}
+
+export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
   return (options: TestSuiteOptions) => {
     const { app, serviceName, idProp = 'id' } = options
 
     const skippedTests: AdapterTestName[] = []
     const allTests: AdapterTestName[] = []
 
-    const test = (name: AdapterTestName, runner: any) => {
-      const skip = testMap ? !testMap[name] : false
+    const test = (name: string, runner: any) => {
+      const skip = defineOptions?.blacklist
+        ? defineOptions.blacklist.includes(name as AdapterTestName)
+        : false
       const its = skip ? it.skip : it
 
       if (skip) {
-        skippedTests.push(name)
+        skippedTests.push(name as AdapterTestName)
       }
 
-      allTests.push(name)
+      allTests.push(name as AdapterTestName)
 
       its(name, runner)
     }

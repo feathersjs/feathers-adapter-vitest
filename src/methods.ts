@@ -1,20 +1,84 @@
 import assert from 'node:assert'
-import type { AdapterMethodsTest } from './declarations.js'
+import type { Test } from './declarations.js'
 import { describe, beforeEach, afterEach, beforeAll } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import { MethodNotAllowed, NotFound } from '@feathersjs/errors'
 
 type MethodTestOptions = {
   app: Application
-  test: AdapterMethodsTest
+  test: Test
   serviceName: string
   idProp: string
 }
 
+type MethodTests = {
+  find: '.find'
+  get:
+    | '.get'
+    | '.get + $select'
+    | '.get + id + query'
+    | '.get + NotFound (string)'
+    | '.get + NotFound (integer)'
+    | '.get + id + query id'
+  remove:
+    | '.remove'
+    | '.remove + $select'
+    | '.remove + id + query'
+    | '.remove + NotFound (string)'
+    | '.remove + NotFound (integer)'
+    | '.remove + multi'
+    | '.remove + multi no pagination'
+    | '.remove + id + query id'
+  update:
+    | '.update'
+    | '.update + $select'
+    | '.update + id + query'
+    | '.update + NotFound (string)'
+    | '.update + NotFound (integer)'
+    | '.update + query + NotFound'
+    | '.update + id + query id'
+  patch:
+    | '.patch'
+    | '.patch + $select'
+    | '.patch + id + query'
+    | '.patch multiple'
+    | '.patch multiple no pagination'
+    | '.patch multi query same'
+    | '.patch multi query changed'
+    // | '.patch multi + $sort'
+    // | '.patch multi + $skip'
+    // | '.patch multi + $limit'
+    | '.patch + NotFound (string)'
+    | '.patch + NotFound (integer)'
+    | '.patch + query + NotFound'
+    | '.patch + id + query id'
+  create:
+    | '.create'
+    | '.create + $select'
+    | '.create multi'
+    | '.create ignores query'
+  internal:
+    | 'internal .find'
+    | 'internal .get'
+    | 'internal .create'
+    | 'internal .update'
+    | 'internal .patch'
+    | 'internal .remove'
+}
+
+export type AdapterTestNameMethods = MethodTests[keyof MethodTests]
+
+type TestName<T extends keyof MethodTests> = MethodTests[T]
+
+type TestConfig<T extends keyof MethodTests> = Record<
+  TestName<T>,
+  () => void | Promise<void>
+>
+
 export default (options: MethodTestOptions) => {
   const { test, app, serviceName, idProp } = options
 
-  describe(' Methods', () => {
+  describe('Methods', () => {
     let doug: any
     let service: any
 
@@ -28,722 +92,815 @@ export default (options: MethodTestOptions) => {
 
     afterEach(async () => {
       try {
-        await app.service(serviceName).remove(doug[idProp])
+        const items = await app.service(serviceName).find({ paginate: false })
+        await Promise.all(
+          items.map((item: any) => service.remove(item[idProp])),
+        )
       } catch {
         // Ignore errors
       }
     })
 
-    describe('get', () => {
-      test('.get', async () => {
-        const data = await service.get(doug[idProp])
+    const config = {
+      find: {
+        '.find': async () => {
+          const data = await service.find()
 
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id matches`,
-        )
-        assert.strictEqual(data.name, 'Doug', 'data.name matches')
-        assert.strictEqual(data.age, 32, 'data.age matches')
-      })
+          assert.ok(Array.isArray(data), 'Data is an array')
+          assert.strictEqual(data.length, 1, 'Got one entry')
+        },
+      } satisfies TestConfig<'find'>,
+      get: {
+        '.get': async () => {
+          const data = await service.get(doug[idProp])
 
-      test('.get + $select', async () => {
-        const data = await service.get(doug[idProp], {
-          query: { $select: ['name'] },
-        })
-
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id property matches`,
-        )
-        assert.strictEqual(data.name, 'Doug', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-      })
-
-      test('.get + id + query', async () => {
-        await assert.rejects(
-          () => service.get(doug[idProp], { query: { name: 'Tester' } }),
-          NotFound,
-        )
-      })
-
-      test('.get + NotFound', async () => {
-        await assert.rejects(async () => {
-          await service.get('568225fbfe21222432e836ff')
-        }, NotFound)
-      })
-
-      test('.get + id + query id', async () => {
-        const alice = await service.create({
-          name: 'Alice',
-          age: 12,
-        })
-
-        await assert.rejects(
-          () =>
-            service.get(doug[idProp], {
-              query: { [idProp]: alice[idProp] },
-            }),
-          NotFound,
-        )
-
-        await service.remove(alice[idProp])
-      })
-    })
-
-    describe('find', () => {
-      test('.find', async () => {
-        const data = await service.find()
-
-        assert.ok(Array.isArray(data), 'Data is an array')
-        assert.strictEqual(data.length, 1, 'Got one entry')
-      })
-    })
-
-    describe('remove', () => {
-      test('.remove', async () => {
-        const data = await service.remove(doug[idProp])
-
-        assert.strictEqual(data.name, 'Doug', 'data.name matches')
-      })
-
-      test('.remove + $select', async () => {
-        const data = await service.remove(doug[idProp], {
-          query: { $select: ['name'] },
-        })
-
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id property matches`,
-        )
-        assert.strictEqual(data.name, 'Doug', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-      })
-
-      test('.remove + id + query', async () => {
-        await assert.rejects(
-          () =>
-            service.remove(doug[idProp], {
-              query: { name: 'Tester' },
-            }),
-          NotFound,
-        )
-
-        const stillExists = await service.get(doug[idProp])
-        assert.ok(stillExists, 'Doug still exists')
-      })
-
-      test('.remove + multi', async () => {
-        await assert.rejects(() => service.remove(null), MethodNotAllowed)
-
-        service.options.multi = ['remove']
-
-        await service.create({ name: 'Dave', age: 29, created: true })
-        await service.create({
-          name: 'David',
-          age: 3,
-          created: true,
-        })
-
-        const data = await service.remove(null, {
-          query: { created: true },
-        })
-
-        assert.strictEqual(data.length, 2)
-
-        const names = data.map((person: any) => person.name)
-
-        assert.ok(names.includes('Dave'), 'Dave removed')
-        assert.ok(names.includes('David'), 'David removed')
-      })
-
-      test('.remove + multi no pagination', async () => {
-        try {
-          await service.remove(doug[idProp])
-        } catch {
-          // Ignore errors
-        }
-
-        const count = 14
-        const defaultPaginate = 10
-
-        assert.ok(
-          count > defaultPaginate,
-          'count is bigger than default pagination',
-        )
-
-        const multiBefore = service.options.multi
-        const paginateBefore = service.options.paginate
-
-        try {
-          service.options.multi = true
-          service.options.paginate = {
-            default: defaultPaginate,
-            max: 100,
-          }
-
-          const emptyItems = await service.find({ paginate: false })
-          assert.strictEqual(emptyItems.length, 0, 'no items before')
-
-          const createdItems = await service.create(
-            Array.from(Array(count)).map((_, i) => ({
-              name: `name-${i}`,
-              age: 3,
-              created: true,
-            })),
-          )
           assert.strictEqual(
-            createdItems.length,
-            count,
-            `created ${count} items`,
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id matches`,
           )
+          assert.strictEqual(data.name, 'Doug', 'data.name matches')
+          assert.strictEqual(data.age, 32, 'data.age matches')
+        },
+        '.get + $select': async () => {
+          const data = await service.get(doug[idProp], {
+            query: { $select: ['name'] },
+          })
 
-          const foundItems = await service.find({ paginate: false })
-          assert.strictEqual(foundItems.length, count, `created ${count} items`)
-
-          const foundPaginatedItems = await service.find({})
           assert.strictEqual(
-            foundPaginatedItems.data.length,
-            defaultPaginate,
-            'found paginated items',
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id property matches`,
+          )
+          assert.strictEqual(data.name, 'Doug', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+        },
+        '.get + id + query': async () => {
+          await assert.rejects(
+            () => service.get(doug[idProp], { query: { name: 'Tester' } }),
+            NotFound,
+          )
+        },
+        '.get + NotFound (string)': async () => {
+          await assert.rejects(async () => {
+            await service.get('568225fbfe21222432e836ff')
+          }, NotFound)
+        },
+        '.get + NotFound (integer)': async () => {
+          await assert.rejects(async () => {
+            await service.get(123141231231)
+          }, NotFound)
+        },
+        '.get + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.get(doug[idProp], {
+                query: { [idProp]: alice[idProp] },
+              }),
+            NotFound,
           )
 
-          const allItems = await service.remove(null, {
+          await service.remove(alice[idProp])
+        },
+      },
+      remove: {
+        '.remove': async () => {
+          const data = await service.remove(doug[idProp])
+
+          assert.strictEqual(data.name, 'Doug', 'data.name matches')
+        },
+        '.remove + $select': async () => {
+          const data = await service.remove(doug[idProp], {
+            query: { $select: ['name'] },
+          })
+
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id property matches`,
+          )
+          assert.strictEqual(data.name, 'Doug', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+        },
+        '.remove + id + query': async () => {
+          await assert.rejects(
+            () =>
+              service.remove(doug[idProp], {
+                query: { name: 'Tester' },
+              }),
+            NotFound,
+          )
+
+          const stillExists = await service.get(doug[idProp])
+          assert.ok(stillExists, 'Doug still exists')
+        },
+        '.remove + NotFound (string)': async () => {
+          await assert.rejects(async () => {
+            await service.remove('568225fbfe21222432e836ff')
+          }, NotFound)
+        },
+        '.remove + NotFound (integer)': async () => {
+          await assert.rejects(async () => {
+            await service.remove(123141231231)
+          }, NotFound)
+        },
+        '.remove + multi': async () => {
+          await assert.rejects(() => service.remove(null), MethodNotAllowed)
+
+          service.options.multi = ['remove']
+
+          await service.create({ name: 'Dave', age: 29, created: true })
+          await service.create({
+            name: 'David',
+            age: 3,
+            created: true,
+          })
+
+          const data = await service.remove(null, {
             query: { created: true },
           })
 
-          assert.strictEqual(
-            allItems.length,
-            count,
-            `removed all ${count} items`,
+          assert.strictEqual(data.length, 2)
+
+          const names = data.map((person: any) => person.name)
+
+          assert.ok(names.includes('Dave'), 'Dave removed')
+          assert.ok(names.includes('David'), 'David removed')
+        },
+        '.remove + multi no pagination': async () => {
+          try {
+            await service.remove(doug[idProp])
+          } catch {
+            // Ignore errors
+          }
+
+          const count = 14
+          const defaultPaginate = 10
+
+          assert.ok(
+            count > defaultPaginate,
+            'count is bigger than default pagination',
           )
-        } finally {
-          await service.remove(null, {
+
+          const multiBefore = service.options.multi
+          const paginateBefore = service.options.paginate
+
+          try {
+            service.options.multi = true
+            service.options.paginate = {
+              default: defaultPaginate,
+              max: 100,
+            }
+
+            const emptyItems = await service.find({ paginate: false })
+            assert.strictEqual(emptyItems.length, 0, 'no items before')
+
+            const createdItems = await service.create(
+              Array.from(Array(count)).map((_, i) => ({
+                name: `name-${i}`,
+                age: 3,
+                created: true,
+              })),
+            )
+            assert.strictEqual(
+              createdItems.length,
+              count,
+              `created ${count} items`,
+            )
+
+            const foundItems = await service.find({ paginate: false })
+            assert.strictEqual(
+              foundItems.length,
+              count,
+              `created ${count} items`,
+            )
+
+            const foundPaginatedItems = await service.find({})
+            assert.strictEqual(
+              foundPaginatedItems.data.length,
+              defaultPaginate,
+              'found paginated items',
+            )
+
+            const allItems = await service.remove(null, {
+              query: { created: true },
+            })
+
+            assert.strictEqual(
+              allItems.length,
+              count,
+              `removed all ${count} items`,
+            )
+          } finally {
+            await service.remove(null, {
+              query: { created: true },
+              paginate: false,
+            })
+
+            service.options.multi = multiBefore
+            service.options.paginate = paginateBefore
+          }
+        },
+        '.remove + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.remove(doug[idProp], {
+                query: { [idProp]: alice[idProp] },
+              }),
+            NotFound,
+          )
+
+          const stillExists = await service.get(doug[idProp])
+          assert.ok(stillExists, 'Doug still exists')
+
+          await service.remove(alice[idProp])
+        },
+      } satisfies TestConfig<'remove'>,
+      update: {
+        '.update': async () => {
+          const originalData = { [idProp]: doug[idProp], name: 'Dougler' }
+          const originalCopy = Object.assign({}, originalData)
+
+          const data = await service.update(doug[idProp], originalData)
+
+          assert.deepStrictEqual(
+            originalData,
+            originalCopy,
+            'data was not modified',
+          )
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id matches`,
+          )
+          assert.strictEqual(data.name, 'Dougler', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+        },
+        '.update + $select': async () => {
+          const originalData = {
+            [idProp]: doug[idProp],
+            name: 'Dougler',
+            age: 10,
+          }
+
+          const data = await service.update(doug[idProp], originalData, {
+            query: { $select: ['name'] },
+          })
+
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id property matches`,
+          )
+          assert.strictEqual(data.name, 'Dougler', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+
+          // TODO: service.get(doug[idProp]) should have age set to 10
+        },
+        '.update + id + query': async () => {
+          await assert.rejects(
+            () =>
+              service.update(
+                doug[idProp],
+                {
+                  name: 'Dougler',
+                },
+                {
+                  query: { name: 'Tester' },
+                },
+              ),
+            NotFound,
+          )
+        },
+        '.update + NotFound (string)': async () => {
+          await assert.rejects(
+            () =>
+              service.update('568225fbfe21222432e836ff', {
+                name: 'NotFound',
+              }),
+            NotFound,
+          )
+        },
+        '.update + NotFound (integer)': async () => {
+          await assert.rejects(
+            () =>
+              service.update(123141231231, {
+                name: 'NotFound',
+              }),
+            NotFound,
+          )
+        },
+        '.update + query + NotFound': async () => {
+          const dave = await service.create({ name: 'Dave' })
+
+          await assert.rejects(
+            () =>
+              service.update(
+                dave[idProp],
+                { name: 'UpdatedDave' },
+                { query: { name: 'NotDave' } },
+              ),
+            NotFound,
+          )
+
+          await service.remove(dave[idProp])
+        },
+        '.update + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.update(
+                doug[idProp],
+                {
+                  name: 'Dougler',
+                  age: 33,
+                },
+                {
+                  query: { [idProp]: alice[idProp] },
+                },
+              ),
+            NotFound,
+          )
+
+          await service.remove(alice[idProp])
+        },
+      } satisfies TestConfig<'update'>,
+      patch: {
+        '.patch': async () => {
+          const originalData = { [idProp]: doug[idProp], name: 'PatchDoug' }
+          const originalCopy = Object.assign({}, originalData)
+
+          const data = await service.patch(doug[idProp], originalData)
+
+          assert.deepStrictEqual(
+            originalData,
+            originalCopy,
+            'original data was not modified',
+          )
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id matches`,
+          )
+          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
+          assert.strictEqual(data.age, 32, 'data.age matches')
+        },
+        '.patch + $select': async () => {
+          const originalData = { [idProp]: doug[idProp], name: 'PatchDoug' }
+
+          const data = await service.patch(doug[idProp], originalData, {
+            query: { $select: ['name'] },
+          })
+
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id property matches`,
+          )
+          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+
+          // TODO: service.get(doug[idProp]) should have age set to 10
+        },
+        '.patch + id + query': async () => {
+          await assert.rejects(
+            () =>
+              service.patch(
+                doug[idProp],
+                {
+                  name: 'id patched doug',
+                },
+                {
+                  query: { name: 'Tester' },
+                },
+              ),
+            NotFound,
+          )
+        },
+        '.patch multiple': async () => {
+          await assert.rejects(() => service.patch(null, {}), MethodNotAllowed)
+
+          const params = {
             query: { created: true },
-            paginate: false,
-          })
-
-          service.options.multi = multiBefore
-          service.options.paginate = paginateBefore
-        }
-      })
-
-      test('.remove + id + query id', async () => {
-        const alice = await service.create({
-          name: 'Alice',
-          age: 12,
-        })
-
-        await assert.rejects(
-          () =>
-            service.remove(doug[idProp], {
-              query: { [idProp]: alice[idProp] },
-            }),
-          NotFound,
-        )
-
-        const stillExists = await service.get(doug[idProp])
-        assert.ok(stillExists, 'Doug still exists')
-
-        await service.remove(alice[idProp])
-      })
-    })
-
-    describe('update', () => {
-      test('.update', async () => {
-        const originalData = { [idProp]: doug[idProp], name: 'Dougler' }
-        const originalCopy = Object.assign({}, originalData)
-
-        const data = await service.update(doug[idProp], originalData)
-
-        assert.deepStrictEqual(
-          originalData,
-          originalCopy,
-          'data was not modified',
-        )
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id matches`,
-        )
-        assert.strictEqual(data.name, 'Dougler', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-      })
-
-      test('.update + $select', async () => {
-        const originalData = {
-          [idProp]: doug[idProp],
-          name: 'Dougler',
-          age: 10,
-        }
-
-        const data = await service.update(doug[idProp], originalData, {
-          query: { $select: ['name'] },
-        })
-
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id property matches`,
-        )
-        assert.strictEqual(data.name, 'Dougler', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-
-        // TODO: service.get(doug[idProp]) should have age set to 10
-      })
-
-      test('.update + id + query', async () => {
-        await assert.rejects(
-          () =>
-            service.update(
-              doug[idProp],
-              {
-                name: 'Dougler',
-              },
-              {
-                query: { name: 'Tester' },
-              },
-            ),
-          NotFound,
-        )
-      })
-
-      test('.update + NotFound', async () => {
-        await assert.rejects(
-          () =>
-            service.update('568225fbfe21222432e836ff', {
-              name: 'NotFound',
-            }),
-          NotFound,
-        )
-      })
-
-      test('.update + query + NotFound', async () => {
-        const dave = await service.create({ name: 'Dave' })
-
-        await assert.rejects(
-          () =>
-            service.update(
-              dave[idProp],
-              { name: 'UpdatedDave' },
-              { query: { name: 'NotDave' } },
-            ),
-          NotFound,
-        )
-
-        await service.remove(dave[idProp])
-      })
-
-      test('.update + id + query id', async () => {
-        const alice = await service.create({
-          name: 'Alice',
-          age: 12,
-        })
-
-        await assert.rejects(
-          () =>
-            service.update(
-              doug[idProp],
-              {
-                name: 'Dougler',
-                age: 33,
-              },
-              {
-                query: { [idProp]: alice[idProp] },
-              },
-            ),
-          NotFound,
-        )
-
-        await service.remove(alice[idProp])
-      })
-    })
-
-    describe('patch', () => {
-      test('.patch', async () => {
-        const originalData = { [idProp]: doug[idProp], name: 'PatchDoug' }
-        const originalCopy = Object.assign({}, originalData)
-
-        const data = await service.patch(doug[idProp], originalData)
-
-        assert.deepStrictEqual(
-          originalData,
-          originalCopy,
-          'original data was not modified',
-        )
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id matches`,
-        )
-        assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-        assert.strictEqual(data.age, 32, 'data.age matches')
-      })
-
-      test('.patch + $select', async () => {
-        const originalData = { [idProp]: doug[idProp], name: 'PatchDoug' }
-
-        const data = await service.patch(doug[idProp], originalData, {
-          query: { $select: ['name'] },
-        })
-
-        assert.strictEqual(
-          data[idProp].toString(),
-          doug[idProp].toString(),
-          `${idProp} id property matches`,
-        )
-        assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-
-        // TODO: service.get(doug[idProp]) should have age set to 10
-      })
-
-      test('.patch + id + query', async () => {
-        await assert.rejects(
-          () =>
-            service.patch(
-              doug[idProp],
-              {
-                name: 'id patched doug',
-              },
-              {
-                query: { name: 'Tester' },
-              },
-            ),
-          NotFound,
-        )
-      })
-
-      test('.patch multiple', async () => {
-        await assert.rejects(() => service.patch(null, {}), MethodNotAllowed)
-
-        const params = {
-          query: { created: true },
-        }
-        const dave = await service.create({
-          name: 'Dave',
-          age: 29,
-          created: true,
-        })
-        const david = await service.create({
-          name: 'David',
-          age: 3,
-          created: true,
-        })
-
-        service.options.multi = ['patch']
-
-        const data = await service.patch(
-          null,
-          {
-            age: 2,
-          },
-          params,
-        )
-
-        assert.strictEqual(data.length, 2, 'returned two entries')
-        assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-        assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-        await service.remove(dave[idProp])
-        await service.remove(david[idProp])
-      })
-
-      test('.patch multiple no pagination', async () => {
-        try {
-          await service.remove(doug[idProp])
-        } catch {
-          // Ignore errors
-        }
-
-        const count = 14
-        const defaultPaginate = 10
-
-        assert.ok(
-          count > defaultPaginate,
-          'count is bigger than default pagination',
-        )
-
-        const multiBefore = service.options.multi
-        const paginateBefore = service.options.paginate
-
-        let ids: any[] | undefined = undefined
-
-        try {
-          service.options.multi = true
-          service.options.paginate = {
-            default: defaultPaginate,
-            max: 100,
           }
-
-          const emptyItems = await service.find({ paginate: false })
-          assert.strictEqual(emptyItems.length, 0, 'no items before')
-
-          const createdItems = await service.create(
-            Array.from(Array(count)).map((_, i) => ({
-              name: `name-${i}`,
-              age: 3,
-              created: true,
-            })),
-          )
-          assert.strictEqual(
-            createdItems.length,
-            count,
-            `created ${count} items`,
-          )
-          ids = createdItems.map((item: any) => item[idProp])
-
-          const foundItems = await service.find({ paginate: false })
-          assert.strictEqual(foundItems.length, count, `created ${count} items`)
-
-          const foundPaginatedItems = await service.find({})
-          assert.strictEqual(
-            foundPaginatedItems.data.length,
-            defaultPaginate,
-            'found paginated data',
-          )
-
-          const allItems = await service.patch(
-            null,
-            { age: 4 },
-            { query: { created: true } },
-          )
-
-          assert.strictEqual(
-            allItems.length,
-            count,
-            `patched all ${count} items`,
-          )
-        } finally {
-          service.options.multi = multiBefore
-          service.options.paginate = paginateBefore
-          if (ids) {
-            await Promise.all(ids.map((id) => service.remove(id)))
-          }
-        }
-      })
-
-      test('.patch multi query same', async () => {
-        const service = app.service(serviceName)
-        // @ts-expect-error options may not exist
-        const multiBefore = service.options?.multi
-
-        // @ts-expect-error options may not exist
-        service.options ??= {}
-
-        // @ts-expect-error options may not exist
-        service.options.multi = true
-
-        const params = {
-          query: { age: { $lt: 10 } },
-        }
-        const dave = await service.create({
-          name: 'Dave',
-          age: 8,
-          created: true,
-        })
-        const david = await service.create({
-          name: 'David',
-          age: 4,
-          created: true,
-        })
-
-        const data = await service.patch(
-          null,
-          {
-            age: 2,
-          },
-          params,
-        )
-
-        assert.strictEqual(data.length, 2, 'returned two entries')
-        assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-        assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-        await service.remove(dave[idProp])
-        await service.remove(david[idProp])
-
-        // @ts-expect-error options may not exist
-        service.options.multi = multiBefore
-      })
-
-      test('.patch multi query changed', async () => {
-        const service = app.service(serviceName)
-        // @ts-expect-error options may not exist
-        const multiBefore = service.options.multi
-
-        // @ts-expect-error options may not exist
-        service.options.multi = true
-
-        const params = {
-          query: { age: 10 },
-        }
-        const dave = await service.create({
-          name: 'Dave',
-          age: 10,
-          created: true,
-        })
-        const david = await service.create({
-          name: 'David',
-          age: 10,
-          created: true,
-        })
-
-        const data = await service.patch(
-          null,
-          {
-            age: 2,
-          },
-          params,
-        )
-
-        assert.strictEqual(data.length, 2, 'returned two entries')
-        assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-        assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-        await service.remove(dave[idProp])
-        await service.remove(david[idProp])
-
-        // @ts-expect-error options may not exist
-        service.options.multi = multiBefore
-      })
-
-      test('.patch + NotFound', async () => {
-        await assert.rejects(async () => {
-          await service.patch('568225fbfe21222432e836ff', {
-            name: 'PatchDoug',
-          })
-        }, NotFound)
-      })
-
-      test('.patch + query + NotFound', async () => {
-        const dave = await service.create({ name: 'Dave' })
-
-        await assert.rejects(
-          () =>
-            service.patch(
-              dave[idProp],
-              { name: 'PatchedDave' },
-              { query: { name: 'NotDave' } },
-            ),
-          NotFound,
-        )
-
-        await service.remove(dave[idProp])
-      })
-
-      test('.patch + id + query id', async () => {
-        const alice = await service.create({
-          name: 'Alice',
-          age: 12,
-        })
-
-        await assert.rejects(
-          () =>
-            service.patch(
-              doug[idProp],
-              {
-                age: 33,
-              },
-              {
-                query: { [idProp]: alice[idProp] },
-              },
-            ),
-          NotFound,
-        )
-
-        await service.remove(alice[idProp])
-      })
-    })
-
-    describe('create', () => {
-      test('.create', async () => {
-        const originalData = {
-          name: 'Bill',
-          age: 40,
-        }
-        const originalCopy = Object.assign({}, originalData)
-
-        const data = await service.create(originalData)
-
-        assert.deepStrictEqual(
-          originalData,
-          originalCopy,
-          'original data was not modified',
-        )
-        assert.ok(data instanceof Object, 'data is an object')
-        assert.strictEqual(data.name, 'Bill', 'data.name matches')
-
-        await service.remove(data[idProp])
-      })
-
-      test('.create ignores query', async () => {
-        const originalData = {
-          name: 'Billy',
-          age: 42,
-        }
-        const data = await service.create(originalData, {
-          query: {
+          const dave = await service.create({
             name: 'Dave',
-          },
-        })
+            age: 29,
+            created: true,
+          })
+          const david = await service.create({
+            name: 'David',
+            age: 3,
+            created: true,
+          })
 
-        assert.strictEqual(data.name, 'Billy', 'data.name matches')
+          service.options.multi = ['patch']
 
-        await service.remove(data[idProp])
-      })
+          const data = await service.patch(
+            null,
+            {
+              age: 2,
+            },
+            params,
+          )
 
-      test('.create + $select', async () => {
-        const originalData = {
-          name: 'William',
-          age: 23,
+          assert.strictEqual(data.length, 2, 'returned two entries')
+          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+
+          await service.remove(dave[idProp])
+          await service.remove(david[idProp])
+        },
+        '.patch multiple no pagination': async () => {
+          try {
+            await service.remove(doug[idProp])
+          } catch {
+            // Ignore errors
+          }
+
+          const count = 14
+          const defaultPaginate = 10
+
+          assert.ok(
+            count > defaultPaginate,
+            'count is bigger than default pagination',
+          )
+
+          const multiBefore = service.options.multi
+          const paginateBefore = service.options.paginate
+
+          let ids: any[] | undefined = undefined
+
+          try {
+            service.options.multi = true
+            service.options.paginate = {
+              default: defaultPaginate,
+              max: 100,
+            }
+
+            const emptyItems = await service.find({ paginate: false })
+            assert.strictEqual(emptyItems.length, 0, 'no items before')
+
+            const createdItems = await service.create(
+              Array.from(Array(count)).map((_, i) => ({
+                name: `name-${i}`,
+                age: 3,
+                created: true,
+              })),
+            )
+            assert.strictEqual(
+              createdItems.length,
+              count,
+              `created ${count} items`,
+            )
+            ids = createdItems.map((item: any) => item[idProp])
+
+            const foundItems = await service.find({ paginate: false })
+            assert.strictEqual(
+              foundItems.length,
+              count,
+              `created ${count} items`,
+            )
+
+            const foundPaginatedItems = await service.find({})
+            assert.strictEqual(
+              foundPaginatedItems.data.length,
+              defaultPaginate,
+              'found paginated data',
+            )
+
+            const allItems = await service.patch(
+              null,
+              { age: 4 },
+              { query: { created: true } },
+            )
+
+            assert.strictEqual(
+              allItems.length,
+              count,
+              `patched all ${count} items`,
+            )
+          } finally {
+            service.options.multi = multiBefore
+            service.options.paginate = paginateBefore
+            if (ids) {
+              await Promise.all(ids.map((id) => service.remove(id)))
+            }
+          }
+        },
+        '.patch multi query same': async () => {
+          const service = app.service(serviceName)
+          // @ts-expect-error options may not exist
+          const multiBefore = service.options?.multi
+
+          // @ts-expect-error options may not exist
+          service.options ??= {}
+
+          // @ts-expect-error options may not exist
+          service.options.multi = true
+
+          const params = {
+            query: { age: { $lt: 10 } },
+          }
+          const dave = await service.create({
+            name: 'Dave',
+            age: 8,
+            created: true,
+          })
+          const david = await service.create({
+            name: 'David',
+            age: 4,
+            created: true,
+          })
+
+          const data = await service.patch(
+            null,
+            {
+              age: 2,
+            },
+            params,
+          )
+
+          assert.strictEqual(data.length, 2, 'returned two entries')
+          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+
+          await service.remove(dave[idProp])
+          await service.remove(david[idProp])
+
+          // @ts-expect-error options may not exist
+          service.options.multi = multiBefore
+        },
+        '.patch multi query changed': async () => {
+          const service = app.service(serviceName)
+          // @ts-expect-error options may not exist
+          const multiBefore = service.options.multi
+
+          // @ts-expect-error options may not exist
+          service.options.multi = true
+
+          const params = {
+            query: { age: 10 },
+          }
+          const dave = await service.create({
+            name: 'Dave',
+            age: 10,
+            created: true,
+          })
+          const david = await service.create({
+            name: 'David',
+            age: 10,
+            created: true,
+          })
+
+          const data = await service.patch(
+            null,
+            {
+              age: 2,
+            },
+            params,
+          )
+
+          assert.strictEqual(data.length, 2, 'returned two entries')
+          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+
+          await service.remove(dave[idProp])
+          await service.remove(david[idProp])
+
+          // @ts-expect-error options may not exist
+          service.options.multi = multiBefore
+        },
+        // '.patch multi + $sort': async () => {
+        //   const users = await Promise.all(
+        //     ['A', 'B', 'C'].map((name) =>
+        //       service.create({ name, age: 20, sortTest: true }),
+        //     ),
+        //   )
+
+        //   const patched = await service.patch(
+        //     null,
+        //     { age: 30 },
+        //     {
+        //       query: {
+        //         [idProp]: { $in: users.map((user) => user[idProp]) },
+        //         $sort: { name: -1 },
+        //       },
+        //     },
+        //   )
+
+        //   assert.strictEqual(patched.length, 3, 'patched three entries')
+        //   assert.strictEqual(patched[0].name, 'C', 'first entry is C')
+        //   assert.strictEqual(patched[1].name, 'B', 'second entry is B')
+        //   assert.strictEqual(patched[2].name, 'A', 'third entry is A')
+
+        //   await Promise.all(users.map((user) => service.remove(user[idProp])))
+        // },
+        // '.patch multi + $skip': async () => {
+        //   const users = await Promise.all(
+        //     ['A', 'B', 'C'].map((name) => service.create({ name, age: 20 })),
+        //   )
+
+        //   const patched = await service.patch(
+        //     null,
+        //     { age: 30 },
+        //     {
+        //       query: {
+        //         [idProp]: { $in: users.map((user) => user[idProp]) },
+        //         $skip: 1,
+        //       },
+        //     },
+        //   )
+
+        //   assert.strictEqual(patched.length, 2, 'patched two entries')
+        //   const names = patched.map((p: any) => p.name)
+        //   ;['B', 'C'].forEach((name) => {
+        //     assert.ok(names.includes(name), `patched entry is ${name}`)
+        //   })
+        // },
+        // '.patch multi + $limit': async () => {
+        //   const users = await Promise.all(
+        //     ['A', 'B', 'C'].map((name) => service.create({ name, age: 20 })),
+        //   )
+
+        //   const patched = await service.patch(
+        //     null,
+        //     { age: 30 },
+        //     {
+        //       query: {
+        //         [idProp]: { $in: users.map((user) => user[idProp]) },
+        //         $limit: 2,
+        //       },
+        //     },
+        //   )
+
+        //   assert.strictEqual(patched.length, 2, 'patched two entries')
+        //   const names = patched.map((p: any) => p.name)
+        //   ;['A', 'B', 'C'].forEach((name) => {
+        //     if (names.includes(name)) {
+        //       assert.ok(true, `patched entry is ${name}`)
+        //     }
+        //   })
+        // },
+        '.patch + NotFound (string)': async () => {
+          await assert.rejects(async () => {
+            await service.patch('568225fbfe21222432e836ff', {
+              name: 'PatchDoug',
+            })
+          }, NotFound)
+        },
+        '.patch + NotFound (integer)': async () => {
+          await assert.rejects(async () => {
+            await service.patch(123141231231, {
+              name: 'PatchDoug',
+            })
+          }, NotFound)
+        },
+        '.patch + query + NotFound': async () => {
+          const dave = await service.create({ name: 'Dave' })
+
+          await assert.rejects(
+            () =>
+              service.patch(
+                dave[idProp],
+                { name: 'PatchedDave' },
+                { query: { name: 'NotDave' } },
+              ),
+            NotFound,
+          )
+
+          await service.remove(dave[idProp])
+        },
+        '.patch + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.patch(
+                doug[idProp],
+                {
+                  age: 33,
+                },
+                {
+                  query: { [idProp]: alice[idProp] },
+                },
+              ),
+            NotFound,
+          )
+
+          await service.remove(alice[idProp])
+        },
+      } satisfies TestConfig<'patch'>,
+      create: {
+        '.create': async () => {
+          const originalData = {
+            name: 'Bill',
+            age: 40,
+          }
+          const originalCopy = Object.assign({}, originalData)
+
+          const data = await service.create(originalData)
+
+          assert.deepStrictEqual(
+            originalData,
+            originalCopy,
+            'original data was not modified',
+          )
+          assert.ok(data instanceof Object, 'data is an object')
+          assert.strictEqual(data.name, 'Bill', 'data.name matches')
+
+          await service.remove(data[idProp])
+        },
+        '.create ignores query': async () => {
+          const originalData = {
+            name: 'Billy',
+            age: 42,
+          }
+          const data = await service.create(originalData, {
+            query: {
+              name: 'Dave',
+            },
+          })
+
+          assert.strictEqual(data.name, 'Billy', 'data.name matches')
+
+          await service.remove(data[idProp])
+        },
+        '.create + $select': async () => {
+          const originalData = {
+            name: 'William',
+            age: 23,
+          }
+
+          const data = await service.create(originalData, {
+            query: { $select: ['name'] },
+          })
+
+          assert.ok(idProp in data, 'data has id')
+          assert.strictEqual(data.name, 'William', 'data.name matches')
+          assert.ok(!data.age, 'data.age is falsy')
+
+          const created = await service.get(data[idProp])
+
+          assert.strictEqual(created.age, 23, 'data.age created')
+
+          await service.remove(data[idProp])
+        },
+        '.create multi': async () => {
+          await assert.rejects(() => service.create([]), MethodNotAllowed)
+
+          const items = [
+            {
+              name: 'Gerald',
+              age: 18,
+            },
+            {
+              name: 'Herald',
+              age: 18,
+            },
+          ]
+
+          service.options.multi = ['create', 'patch']
+
+          const data = await service.create(items)
+
+          assert.ok(Array.isArray(data), 'data is an array')
+          assert.ok(typeof data[0][idProp] !== 'undefined', 'id is set')
+          assert.strictEqual(data[0].name, 'Gerald', 'first name matches')
+          assert.ok(typeof data[1][idProp] !== 'undefined', 'id is set')
+          assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
+
+          await service.remove(data[0][idProp])
+          await service.remove(data[1][idProp])
+        },
+      } satisfies TestConfig<'create'>,
+    }
+
+    for (const key in config) {
+      const group = (config as any)[key] as TestConfig<any>
+      describe(key, () => {
+        for (const testName in group) {
+          test(testName, () => group[testName]())
         }
-
-        const data = await service.create(originalData, {
-          query: { $select: ['name'] },
-        })
-
-        assert.ok(idProp in data, 'data has id')
-        assert.strictEqual(data.name, 'William', 'data.name matches')
-        assert.ok(!data.age, 'data.age is falsy')
-
-        const created = await service.get(data[idProp])
-
-        assert.strictEqual(created.age, 23, 'data.age created')
-
-        await service.remove(data[idProp])
       })
-
-      test('.create multi', async () => {
-        await assert.rejects(() => service.create([]), MethodNotAllowed)
-
-        const items = [
-          {
-            name: 'Gerald',
-            age: 18,
-          },
-          {
-            name: 'Herald',
-            age: 18,
-          },
-        ]
-
-        service.options.multi = ['create', 'patch']
-
-        const data = await service.create(items)
-
-        assert.ok(Array.isArray(data), 'data is an array')
-        assert.ok(typeof data[0][idProp] !== 'undefined', 'id is set')
-        assert.strictEqual(data[0].name, 'Gerald', 'first name matches')
-        assert.ok(typeof data[1][idProp] !== 'undefined', 'id is set')
-        assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
-
-        await service.remove(data[0][idProp])
-        await service.remove(data[1][idProp])
-      })
-    })
+    }
 
     describe("doesn't call public methods internally", () => {
       let throwing: any
@@ -776,32 +933,32 @@ export default (options: MethodTestOptions) => {
         })
       })
 
-      test('internal .find', () =>
-        (app as any).service(serviceName).find.call(throwing))
+      const internal = {
+        'internal .find': () =>
+          (app as any).service(serviceName).find.call(throwing),
+        'internal .get': () => service.get.call(throwing, doug[idProp]),
+        'internal .create': async () => {
+          const bob = await service.create.call(throwing, {
+            name: 'Bob',
+            age: 25,
+          })
 
-      test('internal .get', () => service.get.call(throwing, doug[idProp]))
+          await service.remove(bob[idProp])
+        },
+        'internal .update': () =>
+          service.update.call(throwing, doug[idProp], {
+            name: 'Dougler',
+          }),
+        'internal .patch': () =>
+          service.patch.call(throwing, doug[idProp], {
+            name: 'PatchDoug',
+          }),
+        'internal .remove': () => service.remove.call(throwing, doug[idProp]),
+      } satisfies TestConfig<'internal'>
 
-      test('internal .create', async () => {
-        const bob = await service.create.call(throwing, {
-          name: 'Bob',
-          age: 25,
-        })
-
-        await service.remove(bob[idProp])
-      })
-
-      test('internal .update', () =>
-        service.update.call(throwing, doug[idProp], {
-          name: 'Dougler',
-        }))
-
-      test('internal .patch', () =>
-        service.patch.call(throwing, doug[idProp], {
-          name: 'PatchDoug',
-        }))
-
-      test('internal .remove', () =>
-        service.remove.call(throwing, doug[idProp]))
+      for (const testName in internal) {
+        test(testName, () => (internal as any)[testName]())
+      }
     })
   })
 }
