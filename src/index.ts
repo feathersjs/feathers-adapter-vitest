@@ -41,7 +41,7 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
         skip = true
       }
       if (
-        defineOptions?.only &&
+        defineOptions?.only?.length &&
         !defineOptions.only.includes(name as AdapterTestName)
       ) {
         skip = true
