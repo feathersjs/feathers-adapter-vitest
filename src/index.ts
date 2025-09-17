@@ -5,7 +5,7 @@ import type { AdapterTestNameMethods } from './methods.js'
 import methodTests from './methods.js'
 import type { AdapterTestNameSyntax } from './syntax.js'
 import syntaxTests from './syntax.js'
-import { describe, it, afterAll } from 'vitest'
+import { describe, it } from 'vitest'
 
 export type TestSuiteOptions = {
   app: Application
@@ -32,9 +32,6 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
   return (options: TestSuiteOptions) => {
     const { app, serviceName, idProp = 'id' } = options
 
-    const skippedTests: AdapterTestName[] = []
-    const allTests: AdapterTestName[] = []
-
     const test = (name: string, runner: any) => {
       let skip = false
       if (defineOptions?.blacklist?.includes(name as AdapterTestName)) {
@@ -46,15 +43,9 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
       ) {
         skip = true
       }
-      const its = skip ? it.skip : it
+      const maybeSkip = skip ? it.skip : it
 
-      if (skip) {
-        skippedTests.push(name as AdapterTestName)
-      }
-
-      allTests.push(name as AdapterTestName)
-
-      its(name, runner)
+      maybeSkip(name, runner)
     }
 
     describe(`app.service('${serviceName}') with options.id: '${idProp}'`, () => {
@@ -106,15 +97,6 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
           itemsAfterRemove.length === 0,
           "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
         )
-      })
-
-      afterAll(() => {
-        if (skippedTests.length) {
-          console.log(
-            `\nSkipped the following ${skippedTests.length} Feathers adapter test(s) out of ${allTests.length} total:`,
-          )
-          console.log(JSON.stringify(skippedTests, null, '  '))
-        }
       })
 
       basicTests({ test, app, serviceName, idProp })
