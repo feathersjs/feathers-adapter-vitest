@@ -10,35 +10,6 @@ type SyntaxTestOptions = {
   idProp: string
 }
 
-export type AdapterTestNameSyntax =
-  | '.find + equal'
-  | '.find + equal multiple'
-  | '.find + $sort'
-  | '.find + $sort + string'
-  | '.find + $limit'
-  | '.find + $limit 0'
-  | '.find + $skip'
-  | '.find + $select'
-  | '.find + $or'
-  | '.find + $in'
-  | '.find + $nin'
-  | '.find + $lt'
-  | '.find + $lte'
-  | '.find + $gt'
-  | '.find + $gte'
-  | '.find + $ne'
-  | '.find + $gt + $lt + $sort'
-  | '.find + $or nested + $sort'
-  | '.find + $and'
-  | '.find + $and + $or'
-  | 'params.adapter + paginate'
-  | 'params.adapter + multi'
-  | '.find + paginate'
-  | '.find + paginate + query'
-  | '.find + paginate + $limit + $skip'
-  | '.find + paginate + $limit 0'
-  | '.find + paginate + params'
-
 type SyntaxTests = {
   general: '.find + equal' | '.find + equal multiple'
   filters:
@@ -71,7 +42,7 @@ type SyntaxTests = {
     | '.find + paginate + params'
 }
 
-export type AdapterMethodsTestName = SyntaxTests[keyof SyntaxTests]
+export type AdapterTestNameSyntax = SyntaxTests[keyof SyntaxTests]
 
 type TestName<T extends keyof SyntaxTests> = SyntaxTests[T]
 
@@ -83,7 +54,7 @@ type TestConfig<T extends keyof SyntaxTests> = Record<
 export default (options: SyntaxTestOptions) => {
   const { test, app, serviceName, idProp } = options
 
-  describe('Query Syntax', () => {
+  describe('Syntax', () => {
     let bob: any
     let alice: any
     let doug: any
@@ -117,16 +88,16 @@ export default (options: SyntaxTestOptions) => {
           const params = { query: { name: 'Alice' } }
           const data = await service.find(params)
 
-          assert.ok(Array.isArray(data))
-          assert.strictEqual(data.length, 1)
-          assert.strictEqual(data[0].name, 'Alice')
+          assert.ok(Array.isArray(data), 'data is an array')
+          assert.strictEqual(data.length, 1, 'data has one entry')
+          assert.strictEqual(data[0].name, 'Alice', 'correct name')
         },
         '.find + equal multiple': async () => {
           const data = await service.find({
             query: { name: 'Alice', age: 20 },
           })
 
-          assert.strictEqual(data.length, 0)
+          assert.strictEqual(data.length, 0, 'no results')
         },
       } satisfies TestConfig<'general'>,
       filters: {
@@ -148,10 +119,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3)
-          assert.strictEqual(data[0].name, 'Doug')
-          assert.strictEqual(data[1].name, 'Bob')
-          assert.strictEqual(data[2].name, 'Alice')
+          assert.strictEqual(data.length, 3, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Doug', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          assert.strictEqual(data[2].name, 'Alice', 'third item')
         },
         '.find + $sort + string': async () => {
           const data = await service.find({
@@ -160,10 +131,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3)
-          assert.strictEqual(data[0].name, 'Alice')
-          assert.strictEqual(data[1].name, 'Bob')
-          assert.strictEqual(data[2].name, 'Doug')
+          assert.strictEqual(data.length, 3, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          assert.strictEqual(data[2].name, 'Doug', 'third item')
         },
         '.find + $limit': async () => {
           const data = await service.find({
@@ -172,7 +143,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
+          assert.strictEqual(data.length, 2, 'correct data.length')
         },
         '.find + $limit 0': async () => {
           const data = await service.find({
@@ -181,7 +152,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 0)
+          assert.strictEqual(data.length, 0, 'data array is empty')
         },
         '.find + $skip': async () => {
           const data = await service.find({
@@ -191,9 +162,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
-          assert.strictEqual(data[0].name, 'Bob')
-          assert.strictEqual(data[1].name, 'Doug')
+          assert.strictEqual(data.length, 2, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Bob', 'first user')
+          assert.strictEqual(data[1].name, 'Doug', 'second user')
         },
         '.find + $select': async () => {
           const data = await service.find({
@@ -203,10 +174,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1)
+          assert.strictEqual(data.length, 1, 'correct data.length')
           assert.ok(idProp in data[0], 'data has id')
-          assert.strictEqual(data[0].name, 'Alice')
-          assert.strictEqual(data[0].age, undefined)
+          assert.strictEqual(data[0].name, 'Alice', 'correct name')
+          assert.strictEqual(data[0].age, undefined, 'age was not selected')
         },
       } satisfies TestConfig<'filters'>,
       operators: {
@@ -218,9 +189,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
-          assert.strictEqual(data[0].name, 'Alice')
-          assert.strictEqual(data[1].name, 'Bob')
+          assert.strictEqual(data.length, 2, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
         },
         '.find + $in': async () => {
           const data = await service.find({
@@ -232,9 +203,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
-          assert.strictEqual(data[0].name, 'Alice')
-          assert.strictEqual(data[1].name, 'Bob')
+          assert.strictEqual(data.length, 2, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
         },
         '.find + $nin': async () => {
           const data = await service.find({
@@ -245,8 +216,8 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1)
-          assert.strictEqual(data[0].name, 'Doug')
+          assert.strictEqual(data.length, 1, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Doug', 'correct item')
         },
         '.find + $lt': async () => {
           const data = await service.find({
@@ -257,7 +228,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
+          assert.strictEqual(data.length, 2, 'correct data.length')
         },
         '.find + $lte': async () => {
           const data = await service.find({
@@ -268,7 +239,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
+          assert.strictEqual(data.length, 2, 'correct data.length')
         },
         '.find + $gt': async () => {
           const data = await service.find({
@@ -279,7 +250,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1)
+          assert.strictEqual(data.length, 1, 'correct data.length')
         },
         '.find + $gte': async () => {
           const data = await service.find({
@@ -290,7 +261,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2)
+          assert.strictEqual(data.length, 2, 'correct data.length')
         },
         '.find + $ne': async () => {
           const data = await service.find({
@@ -301,7 +272,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct length')
+          assert.strictEqual(data.length, 2, 'correct data.length')
         },
         '.find + $gt + $lt + $sort': async () => {
           const params = {
@@ -316,7 +287,7 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 2, 'correct length')
+          assert.strictEqual(data.length, 2, 'correct data.length')
           assert.strictEqual(data[0].name, 'Alice', 'first user')
           assert.strictEqual(data[1].name, 'Bob', 'second user')
         },
@@ -338,7 +309,7 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 2, 'correct length')
+          assert.strictEqual(data.length, 2, 'correct data.length')
           assert.strictEqual(data[0].name, 'Alice', 'first user')
           assert.strictEqual(data[1].name, 'Doug', 'second user')
         },
@@ -352,7 +323,7 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 1, 'correct length')
+          assert.strictEqual(data.length, 1, 'correct data.length')
           assert.strictEqual(data[0].name, 'Alice', 'correct user')
         },
         '.find + $and + $or': async () => {
@@ -365,7 +336,7 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 1, 'correct length')
+          assert.strictEqual(data.length, 1, 'correct data.length')
           assert.strictEqual(data[0].name, 'Alice', 'correct user')
         },
       } satisfies TestConfig<'operators'>,
@@ -398,7 +369,7 @@ export default (options: SyntaxTestOptions) => {
           }
           const users = await service.create(items, multiParams)
 
-          assert.strictEqual(users.length, 2)
+          assert.strictEqual(users.length, 2, 'created two items')
 
           await service.remove(users[0][idProp])
           await service.remove(users[1][idProp])
