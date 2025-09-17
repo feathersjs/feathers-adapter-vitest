@@ -130,7 +130,7 @@ export default (options: MethodTestOptions) => {
             `${idProp} id property matches`,
           )
           assert.strictEqual(data.name, 'Doug', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.ok(!('age' in data), 'data.age is not present')
         },
         '.get + id + query': async () => {
           await assert.rejects(
@@ -182,7 +182,7 @@ export default (options: MethodTestOptions) => {
             `${idProp} id property matches`,
           )
           assert.strictEqual(data.name, 'Doug', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.ok(!('age' in data), 'data.age is not presents')
         },
         '.remove + id + query': async () => {
           await assert.rejects(
@@ -359,10 +359,12 @@ export default (options: MethodTestOptions) => {
             doug[idProp].toString(),
             `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'Dougler', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.strictEqual(data.name, 'Dougler', 'data.name changed')
+          assert.ok(!('age' in data), 'data.age is not present')
 
-          // TODO: service.get(doug[idProp]) should have age set to 10
+          const changed = await service.get(doug[idProp])
+
+          assert.strictEqual(changed.age, originalData.age, 'data.age changed')
         },
         '.update + id + query': async () => {
           await assert.rejects(
@@ -457,7 +459,11 @@ export default (options: MethodTestOptions) => {
           assert.strictEqual(data.age, 32, 'data.age matches')
         },
         '.patch + $select': async () => {
-          const originalData = { [idProp]: doug[idProp], name: 'PatchDoug' }
+          const originalData = {
+            [idProp]: doug[idProp],
+            name: 'PatchDoug',
+            age: 10,
+          }
 
           const data = await service.patch(doug[idProp], originalData, {
             query: { $select: ['name'] },
@@ -469,9 +475,10 @@ export default (options: MethodTestOptions) => {
             `${idProp} id property matches`,
           )
           assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.ok(!('age' in data), 'data.age is not present')
 
-          // TODO: service.get(doug[idProp]) should have age set to 10
+          const changed = await service.get(doug[idProp])
+          assert.strictEqual(changed.age, originalData.age, 'data.age changed')
         },
         '.patch + id + query': async () => {
           await assert.rejects(
@@ -852,7 +859,7 @@ export default (options: MethodTestOptions) => {
 
           assert.ok(idProp in data, 'data has id')
           assert.strictEqual(data.name, 'William', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.ok(!('age' in data), 'data.age is not present')
 
           const created = await service.get(data[idProp])
 
