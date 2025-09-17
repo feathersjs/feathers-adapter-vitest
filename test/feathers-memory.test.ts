@@ -5,7 +5,7 @@ import { MemoryService } from '@feathersjs/memory'
 
 const testSuite = defineTestSuite()
 
-describe('Feathers Memory Service', () => {
+describe('@feathersjs/memory', () => {
   type Person = {
     id: number
     name: string

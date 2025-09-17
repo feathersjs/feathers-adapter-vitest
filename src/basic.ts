@@ -26,7 +26,7 @@ type TestConfigBasic = Record<AdapterTestNameBasic, () => void | Promise<void>>
 export default (options: BasicTestOptions) => {
   const { test, app, serviceName, idProp } = options
 
-  describe('Basic Functionality', () => {
+  describe('Basic', () => {
     let service: any
 
     beforeEach(() => {

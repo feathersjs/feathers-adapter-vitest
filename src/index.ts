@@ -57,7 +57,57 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
       its(name, runner)
     }
 
-    describe(`Adapter tests for '${serviceName}' service with '${idProp}' id property`, () => {
+    describe(`app.service('${serviceName}') with options.id: '${idProp}'`, () => {
+      beforeAll(async () => {
+        const service = app.service(serviceName)
+
+        // test create
+        const doug = await service.create({
+          name: 'Doug',
+          age: 32,
+        })
+
+        assert.ok(
+          doug[idProp] !== null,
+          `simple 'create' failed (no ${idProp}). Before you start to test the adapter make sure simple create works.`,
+        )
+        assert.strictEqual(
+          doug.name,
+          'Doug',
+          "simple 'create' failed (no name). Before you start to test the adapter make sure simple create works.",
+        )
+        assert.strictEqual(
+          doug.age,
+          32,
+          "simple 'create' failed (no age). Before you start to test the adapter make sure simple create works.",
+        )
+
+        // test delete
+
+        const items = await service.find({ paginate: false })
+        assert.ok(
+          Array.isArray(items),
+          'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
+        )
+        assert.strictEqual(
+          items.length,
+          1,
+          'find should return an item. Before you start to test the adapter make sure simple find works.',
+        )
+        assert.ok(
+          idProp in items[0],
+          `'find' should return an item with ${idProp}. Before you start to test the adapter make sure simple find works.`,
+        )
+        await Promise.all(
+          items.map((item: any) => service.remove(item[idProp])),
+        )
+        const itemsAfterRemove = await service.find({ paginate: false })
+        assert.ok(
+          itemsAfterRemove.length === 0,
+          "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
+        )
+      })
+
       afterAll(() => {
         if (skippedTests.length) {
           console.log(
