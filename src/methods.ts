@@ -341,7 +341,7 @@ export default (options: MethodTestOptions) => {
             `${idProp} id matches`,
           )
           assert.strictEqual(data.name, 'Dougler', 'data.name matches')
-          assert.ok(!data.age, 'data.age is falsy')
+          assert.ok(data.age == null, 'data.age is nullable') // could be null or undefined, based on the adapter
         },
         '.update + $select': async () => {
           const originalData = {
