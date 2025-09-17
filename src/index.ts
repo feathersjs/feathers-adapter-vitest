@@ -52,6 +52,16 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
       beforeAll(async () => {
         const service = app.service(serviceName)
 
+        let items = await service.find({ paginate: false })
+        assert.ok(
+          Array.isArray(items),
+          'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
+        )
+
+        await Promise.all(
+          items.map((item: any) => service.remove(item[idProp])),
+        )
+
         // test create
         const doug = await service.create({
           name: 'Doug',
@@ -75,7 +85,7 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
 
         // test delete
 
-        const items = await service.find({ paginate: false })
+        items = await service.find({ paginate: false })
         assert.ok(
           Array.isArray(items),
           'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
