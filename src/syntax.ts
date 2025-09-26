@@ -125,7 +125,7 @@ export default (options: SyntaxTestOptions) => {
           assert.strictEqual(data[2].name, 'Alice', 'third item')
         },
         '.find + $sort + string': async () => {
-          const data = await service.find({
+          let data = await service.find({
             query: {
               $sort: { name: '1' },
             },
@@ -135,6 +135,17 @@ export default (options: SyntaxTestOptions) => {
           assert.strictEqual(data[0].name, 'Alice', 'first item')
           assert.strictEqual(data[1].name, 'Bob', 'second item')
           assert.strictEqual(data[2].name, 'Doug', 'third item')
+
+          data = await service.find({
+            query: {
+              $sort: { name: '-1' },
+            },
+          })
+
+          assert.strictEqual(data.length, 3, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Doug', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          assert.strictEqual(data[2].name, 'Alice', 'third item')
         },
         '.find + $limit': async () => {
           const data = await service.find({
