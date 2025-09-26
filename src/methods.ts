@@ -3,6 +3,7 @@ import type { Test } from './declarations.js'
 import { describe, beforeEach, afterEach, beforeAll } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import { MethodNotAllowed, NotFound } from '@feathersjs/errors'
+import { withOptions } from './utils.js'
 
 type MethodTestOptions = {
   app: Application
@@ -82,7 +83,7 @@ export default (options: MethodTestOptions) => {
     let doug: any
     let service: any
 
-    beforeAll(async () => {
+    beforeAll(() => {
       service = app.service(serviceName)
     })
 
@@ -93,10 +94,12 @@ export default (options: MethodTestOptions) => {
       })
     })
 
-    afterEach(async () => {
+    async function clean() {
       const items = await service.find({ paginate: false })
       await Promise.all(items.map((item: any) => service.remove(item[idProp])))
-    })
+    }
+
+    afterEach(clean)
 
     const config = {
       find: {
@@ -139,14 +142,13 @@ export default (options: MethodTestOptions) => {
           )
         },
         '.get + NotFound (string)': async () => {
-          await assert.rejects(async () => {
-            await service.get('568225fbfe21222432e836ff')
-          }, NotFound)
+          await assert.rejects(
+            () => service.get('568225fbfe21222432e836ff'),
+            NotFound,
+          )
         },
         '.get + NotFound (integer)': async () => {
-          await assert.rejects(async () => {
-            await service.get(123141231231)
-          }, NotFound)
+          await assert.rejects(() => service.get(123141231231), NotFound)
         },
         '.get + id + query id': async () => {
           const alice = await service.create({
@@ -161,8 +163,6 @@ export default (options: MethodTestOptions) => {
               }),
             NotFound,
           )
-
-          await service.remove(alice[idProp])
         },
       },
       remove: {
@@ -170,6 +170,9 @@ export default (options: MethodTestOptions) => {
           const data = await service.remove(doug[idProp])
 
           assert.strictEqual(data.name, 'Doug', 'data.name matches')
+
+          const items = await service.find({ paginate: false })
+          assert.strictEqual(items.length, 0, 'Got no entries')
         },
         '.remove + $select': async () => {
           const data = await service.remove(doug[idProp], {
@@ -197,44 +200,53 @@ export default (options: MethodTestOptions) => {
           assert.ok(stillExists, 'Doug still exists')
         },
         '.remove + NotFound (string)': async () => {
-          await assert.rejects(async () => {
-            await service.remove('568225fbfe21222432e836ff')
-          }, NotFound)
+          await assert.rejects(
+            () => service.remove('568225fbfe21222432e836ff'),
+            NotFound,
+          )
         },
         '.remove + NotFound (integer)': async () => {
-          await assert.rejects(async () => {
-            await service.remove(123141231231)
-          }, NotFound)
+          await assert.rejects(() => service.remove(123141231231), NotFound)
         },
         '.remove + multi': async () => {
-          await assert.rejects(() => service.remove(null), MethodNotAllowed)
+          await withOptions(service, { multi: false }, () =>
+            assert.rejects(
+              () => service.remove(null),
+              MethodNotAllowed,
+              'remove multi rejects if options.multi is false',
+            ),
+          )
 
-          service.options.multi = ['remove']
+          await withOptions(service, { multi: ['create', 'patch'] }, () =>
+            assert.rejects(
+              () => service.remove(null),
+              MethodNotAllowed,
+              "remove multi rejects if options.multi does not include 'remove'",
+            ),
+          )
 
-          await service.create({ name: 'Dave', age: 29, created: true })
-          await service.create({
-            name: 'David',
-            age: 3,
-            created: true,
+          await withOptions(service, { multi: ['remove'] }, async () => {
+            await service.create({ name: 'Dave', age: 29, created: true })
+            await service.create({
+              name: 'David',
+              age: 3,
+              created: true,
+            })
+
+            const data = await service.remove(null, {
+              query: { created: true },
+            })
+
+            assert.strictEqual(data.length, 2)
+
+            const names = data.map((person: any) => person.name)
+
+            assert.ok(names.includes('Dave'), 'Dave removed')
+            assert.ok(names.includes('David'), 'David removed')
           })
-
-          const data = await service.remove(null, {
-            query: { created: true },
-          })
-
-          assert.strictEqual(data.length, 2)
-
-          const names = data.map((person: any) => person.name)
-
-          assert.ok(names.includes('Dave'), 'Dave removed')
-          assert.ok(names.includes('David'), 'David removed')
         },
         '.remove + multi no pagination': async () => {
-          try {
-            await service.remove(doug[idProp])
-          } catch {
-            // Ignore errors
-          }
+          await clean()
 
           const count = 14
           const defaultPaginate = 10
@@ -244,64 +256,54 @@ export default (options: MethodTestOptions) => {
             'count is bigger than default pagination',
           )
 
-          const multiBefore = service.options.multi
-          const paginateBefore = service.options.paginate
+          await withOptions(
+            service,
+            {
+              multi: true,
+              paginate: { default: defaultPaginate, max: 100 },
+            },
+            async () => {
+              const emptyItems = await service.find({ paginate: false })
+              assert.strictEqual(emptyItems.length, 0, 'no items before')
 
-          try {
-            service.options.multi = true
-            service.options.paginate = {
-              default: defaultPaginate,
-              max: 100,
-            }
+              const createdItems = await service.create(
+                Array.from(Array(count)).map((_, i) => ({
+                  name: `name-${i}`,
+                  age: 3,
+                  created: true,
+                })),
+              )
+              assert.strictEqual(
+                createdItems.length,
+                count,
+                `created ${count} items`,
+              )
 
-            const emptyItems = await service.find({ paginate: false })
-            assert.strictEqual(emptyItems.length, 0, 'no items before')
+              const foundItems = await service.find({ paginate: false })
+              assert.strictEqual(
+                foundItems.length,
+                count,
+                `created ${count} items`,
+              )
 
-            const createdItems = await service.create(
-              Array.from(Array(count)).map((_, i) => ({
-                name: `name-${i}`,
-                age: 3,
-                created: true,
-              })),
-            )
-            assert.strictEqual(
-              createdItems.length,
-              count,
-              `created ${count} items`,
-            )
+              const foundPaginatedItems = await service.find({})
+              assert.strictEqual(
+                foundPaginatedItems.data.length,
+                defaultPaginate,
+                'found paginated items',
+              )
 
-            const foundItems = await service.find({ paginate: false })
-            assert.strictEqual(
-              foundItems.length,
-              count,
-              `created ${count} items`,
-            )
+              const allItems = await service.remove(null, {
+                query: { created: true },
+              })
 
-            const foundPaginatedItems = await service.find({})
-            assert.strictEqual(
-              foundPaginatedItems.data.length,
-              defaultPaginate,
-              'found paginated items',
-            )
-
-            const allItems = await service.remove(null, {
-              query: { created: true },
-            })
-
-            assert.strictEqual(
-              allItems.length,
-              count,
-              `removed all ${count} items`,
-            )
-          } finally {
-            await service.remove(null, {
-              query: { created: true },
-              paginate: false,
-            })
-
-            service.options.multi = multiBefore
-            service.options.paginate = paginateBefore
-          }
+              assert.strictEqual(
+                allItems.length,
+                count,
+                `removed all ${count} items`,
+              )
+            },
+          )
         },
         '.remove + id + query id': async () => {
           const alice = await service.create({
@@ -319,8 +321,6 @@ export default (options: MethodTestOptions) => {
 
           const stillExists = await service.get(doug[idProp])
           assert.ok(stillExists, 'Doug still exists')
-
-          await service.remove(alice[idProp])
         },
       } satisfies TestConfig<'remove'>,
       update: {
@@ -411,8 +411,6 @@ export default (options: MethodTestOptions) => {
               ),
             NotFound,
           )
-
-          await service.remove(dave[idProp])
         },
         '.update + id + query id': async () => {
           const alice = await service.create({
@@ -434,8 +432,6 @@ export default (options: MethodTestOptions) => {
               ),
             NotFound,
           )
-
-          await service.remove(alice[idProp])
         },
       } satisfies TestConfig<'update'>,
       patch: {
@@ -496,11 +492,22 @@ export default (options: MethodTestOptions) => {
           )
         },
         '.patch multiple': async () => {
-          await assert.rejects(() => service.patch(null, {}), MethodNotAllowed)
+          await withOptions(service, { multi: false }, () =>
+            assert.rejects(
+              () => service.patch(null, {}),
+              MethodNotAllowed,
+              'patch multi rejects if options.multi is false',
+            ),
+          )
 
-          const params = {
-            query: { created: true },
-          }
+          await withOptions(service, { multi: ['create', 'remove'] }, () =>
+            assert.rejects(
+              () => service.patch(null, {}),
+              MethodNotAllowed,
+              "patch multi rejects if options.multi does not include 'patch'",
+            ),
+          )
+
           const dave = await service.create({
             name: 'Dave',
             age: 29,
@@ -512,29 +519,24 @@ export default (options: MethodTestOptions) => {
             created: true,
           })
 
-          service.options.multi = ['patch']
+          await withOptions(service, { multi: ['patch'] }, async () => {
+            const data = await service.patch(
+              null,
+              {
+                age: 2,
+              },
+              {
+                query: { created: true },
+              },
+            )
 
-          const data = await service.patch(
-            null,
-            {
-              age: 2,
-            },
-            params,
-          )
-
-          assert.strictEqual(data.length, 2, 'returned two entries')
-          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-          await service.remove(dave[idProp])
-          await service.remove(david[idProp])
+            assert.strictEqual(data.length, 2, 'returned two entries')
+            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+          })
         },
         '.patch multiple no pagination': async () => {
-          try {
-            await service.remove(doug[idProp])
-          } catch {
-            // Ignore errors
-          }
+          await clean()
 
           const count = 14
           const defaultPaginate = 10
@@ -544,150 +546,112 @@ export default (options: MethodTestOptions) => {
             'count is bigger than default pagination',
           )
 
-          const multiBefore = service.options.multi
-          const paginateBefore = service.options.paginate
+          await withOptions(
+            service,
+            {
+              multi: true,
+              paginate: { default: defaultPaginate, max: 100 },
+            },
+            async () => {
+              const emptyItems = await service.find({ paginate: false })
+              assert.strictEqual(emptyItems.length, 0, 'no items before')
 
-          let ids: any[] | undefined = undefined
+              const createdItems = await service.create(
+                Array.from(Array(count)).map((_, i) => ({
+                  name: `name-${i}`,
+                  age: 3,
+                  created: true,
+                })),
+              )
+              assert.strictEqual(
+                createdItems.length,
+                count,
+                `created ${count} items`,
+              )
 
-          try {
-            service.options.multi = true
-            service.options.paginate = {
-              default: defaultPaginate,
-              max: 100,
-            }
+              const foundItems = await service.find({ paginate: false })
+              assert.strictEqual(
+                foundItems.length,
+                count,
+                `created ${count} items`,
+              )
 
-            const emptyItems = await service.find({ paginate: false })
-            assert.strictEqual(emptyItems.length, 0, 'no items before')
+              const foundPaginatedItems = await service.find({})
+              assert.strictEqual(
+                foundPaginatedItems.data.length,
+                defaultPaginate,
+                'found paginated data',
+              )
 
-            const createdItems = await service.create(
-              Array.from(Array(count)).map((_, i) => ({
-                name: `name-${i}`,
-                age: 3,
-                created: true,
-              })),
-            )
-            assert.strictEqual(
-              createdItems.length,
-              count,
-              `created ${count} items`,
-            )
-            ids = createdItems.map((item: any) => item[idProp])
+              const allItems = await service.patch(
+                null,
+                { age: 4 },
+                { query: { created: true } },
+              )
 
-            const foundItems = await service.find({ paginate: false })
-            assert.strictEqual(
-              foundItems.length,
-              count,
-              `created ${count} items`,
-            )
-
-            const foundPaginatedItems = await service.find({})
-            assert.strictEqual(
-              foundPaginatedItems.data.length,
-              defaultPaginate,
-              'found paginated data',
-            )
-
-            const allItems = await service.patch(
-              null,
-              { age: 4 },
-              { query: { created: true } },
-            )
-
-            assert.strictEqual(
-              allItems.length,
-              count,
-              `patched all ${count} items`,
-            )
-          } finally {
-            service.options.multi = multiBefore
-            service.options.paginate = paginateBefore
-            if (ids) {
-              await Promise.all(ids.map((id) => service.remove(id)))
-            }
-          }
+              assert.strictEqual(
+                allItems.length,
+                count,
+                `patched all ${count} items`,
+              )
+            },
+          )
         },
         '.patch multi query same': async () => {
-          const service = app.service(serviceName)
-          // @ts-expect-error options may not exist
-          const multiBefore = service.options?.multi
+          await withOptions(service, { multi: true }, async () => {
+            const dave = await service.create({
+              name: 'Dave',
+              age: 8,
+              created: true,
+            })
+            const david = await service.create({
+              name: 'David',
+              age: 4,
+              created: true,
+            })
 
-          // @ts-expect-error options may not exist
-          service.options ??= {}
+            const data = await service.patch(
+              null,
+              {
+                age: 2,
+              },
+              {
+                query: { age: { $lt: 10 } },
+              },
+            )
 
-          // @ts-expect-error options may not exist
-          service.options.multi = true
-
-          const params = {
-            query: { age: { $lt: 10 } },
-          }
-          const dave = await service.create({
-            name: 'Dave',
-            age: 8,
-            created: true,
+            assert.strictEqual(data.length, 2, 'returned two entries')
+            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
           })
-          const david = await service.create({
-            name: 'David',
-            age: 4,
-            created: true,
-          })
-
-          const data = await service.patch(
-            null,
-            {
-              age: 2,
-            },
-            params,
-          )
-
-          assert.strictEqual(data.length, 2, 'returned two entries')
-          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-          await service.remove(dave[idProp])
-          await service.remove(david[idProp])
-
-          // @ts-expect-error options may not exist
-          service.options.multi = multiBefore
         },
         '.patch multi query changed': async () => {
-          const service = app.service(serviceName)
-          // @ts-expect-error options may not exist
-          const multiBefore = service.options.multi
+          await withOptions(service, { multi: true }, async () => {
+            const dave = await service.create({
+              name: 'Dave',
+              age: 10,
+              created: true,
+            })
+            const david = await service.create({
+              name: 'David',
+              age: 10,
+              created: true,
+            })
 
-          // @ts-expect-error options may not exist
-          service.options.multi = true
+            const data = await service.patch(
+              null,
+              {
+                age: 2,
+              },
+              {
+                query: { age: 10 },
+              },
+            )
 
-          const params = {
-            query: { age: 10 },
-          }
-          const dave = await service.create({
-            name: 'Dave',
-            age: 10,
-            created: true,
+            assert.strictEqual(data.length, 2, 'returned two entries')
+            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
+            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
           })
-          const david = await service.create({
-            name: 'David',
-            age: 10,
-            created: true,
-          })
-
-          const data = await service.patch(
-            null,
-            {
-              age: 2,
-            },
-            params,
-          )
-
-          assert.strictEqual(data.length, 2, 'returned two entries')
-          assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-          assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
-
-          await service.remove(dave[idProp])
-          await service.remove(david[idProp])
-
-          // @ts-expect-error options may not exist
-          service.options.multi = multiBefore
         },
         // '.patch multi + $sort': async () => {
         //   const users = await Promise.all(
@@ -761,18 +725,22 @@ export default (options: MethodTestOptions) => {
         //   })
         // },
         '.patch + NotFound (string)': async () => {
-          await assert.rejects(async () => {
-            await service.patch('568225fbfe21222432e836ff', {
-              name: 'PatchDoug',
-            })
-          }, NotFound)
+          await assert.rejects(
+            () =>
+              service.patch('568225fbfe21222432e836ff', {
+                name: 'PatchDoug',
+              }),
+            NotFound,
+          )
         },
         '.patch + NotFound (integer)': async () => {
-          await assert.rejects(async () => {
-            await service.patch(123141231231, {
-              name: 'PatchDoug',
-            })
-          }, NotFound)
+          await assert.rejects(
+            () =>
+              service.patch(123141231231, {
+                name: 'PatchDoug',
+              }),
+            NotFound,
+          )
         },
         '.patch + query + NotFound': async () => {
           const dave = await service.create({ name: 'Dave' })
@@ -786,8 +754,6 @@ export default (options: MethodTestOptions) => {
               ),
             NotFound,
           )
-
-          await service.remove(dave[idProp])
         },
         '.patch + id + query id': async () => {
           const alice = await service.create({
@@ -809,7 +775,9 @@ export default (options: MethodTestOptions) => {
             NotFound,
           )
 
-          await service.remove(alice[idProp])
+          const dougAfter = await service.get(doug[idProp])
+
+          assert.equal(doug.age, dougAfter.age, 'age stayed the same')
         },
       } satisfies TestConfig<'patch'>,
       create: {
@@ -829,8 +797,6 @@ export default (options: MethodTestOptions) => {
           )
           assert.ok(data instanceof Object, 'data is an object')
           assert.strictEqual(data.name, 'Bill', 'data.name matches')
-
-          await service.remove(data[idProp])
         },
         '.create ignores query': async () => {
           const originalData = {
@@ -844,8 +810,6 @@ export default (options: MethodTestOptions) => {
           })
 
           assert.strictEqual(data.name, 'Billy', 'data.name matches')
-
-          await service.remove(data[idProp])
         },
         '.create + $select': async () => {
           const originalData = {
@@ -868,31 +832,46 @@ export default (options: MethodTestOptions) => {
           await service.remove(data[idProp])
         },
         '.create multi': async () => {
-          await assert.rejects(() => service.create([]), MethodNotAllowed)
+          await withOptions(service, { multi: false }, () =>
+            assert.rejects(
+              () => service.create([]),
+              MethodNotAllowed,
+              'create multi rejects if options.multi is false',
+            ),
+          )
 
-          const items = [
+          await withOptions(service, { multi: ['patch', 'remove'] }, () =>
+            assert.rejects(
+              () => service.create([]),
+              MethodNotAllowed,
+              "create multi rejects if options.multi does not include 'create'",
+            ),
+          )
+
+          await withOptions(
+            service,
             {
-              name: 'Gerald',
-              age: 18,
+              multi: ['create'],
             },
-            {
-              name: 'Herald',
-              age: 18,
+            async () => {
+              const data = await service.create([
+                {
+                  name: 'Gerald',
+                  age: 18,
+                },
+                {
+                  name: 'Herald',
+                  age: 18,
+                },
+              ])
+
+              assert.ok(Array.isArray(data), 'data is an array')
+              assert.ok(typeof data[0][idProp] !== 'undefined', 'id is set')
+              assert.strictEqual(data[0].name, 'Gerald', 'first name matches')
+              assert.ok(typeof data[1][idProp] !== 'undefined', 'id is set')
+              assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
             },
-          ]
-
-          service.options.multi = ['create', 'patch']
-
-          const data = await service.create(items)
-
-          assert.ok(Array.isArray(data), 'data is an array')
-          assert.ok(typeof data[0][idProp] !== 'undefined', 'id is set')
-          assert.strictEqual(data[0].name, 'Gerald', 'first name matches')
-          assert.ok(typeof data[1][idProp] !== 'undefined', 'id is set')
-          assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
-
-          await service.remove(data[0][idProp])
-          await service.remove(data[1][idProp])
+          )
         },
       } satisfies TestConfig<'create'>,
     }
