@@ -116,4 +116,6 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
   }
 }
 
+export { withOptions } from './utils.js'
+
 export * from './declarations.js'
