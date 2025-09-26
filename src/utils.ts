@@ -9,6 +9,9 @@ export const withOptions = (
   options: Record<string, any>,
   callback: () => Promise<void>,
 ) => {
+  if (!('options' in service) || typeof service.options !== 'object') {
+    throw new Error('service.options is not available')
+  }
   const originalOptions = service.options
   service.options = {
     ...service.options,
