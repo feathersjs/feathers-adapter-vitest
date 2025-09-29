@@ -18,30 +18,32 @@ type MethodTests = {
     | '.get'
     | '.get + $select'
     | '.get + id + query'
+    | '.get + id + query id'
     | '.get + NotFound (string)'
     | '.get + NotFound (integer)'
-    | '.get + id + query id'
   remove:
     | '.remove'
     | '.remove + $select'
     | '.remove + id + query'
+    | '.remove + id + query id'
     | '.remove + NotFound (string)'
     | '.remove + NotFound (integer)'
     | '.remove + multi'
     | '.remove + multi no pagination'
-    | '.remove + id + query id'
   update:
     | '.update'
     | '.update + $select'
     | '.update + id + query'
+    | '.update + id + query id'
     | '.update + NotFound (string)'
     | '.update + NotFound (integer)'
     | '.update + query + NotFound'
-    | '.update + id + query id'
   patch:
     | '.patch'
     | '.patch + $select'
+    | '.patch + $select unchanged'
     | '.patch + id + query'
+    | '.patch + id + query id'
     | '.patch multiple'
     | '.patch multiple no pagination'
     | '.patch multi query same'
@@ -52,7 +54,6 @@ type MethodTests = {
     | '.patch + NotFound (string)'
     | '.patch + NotFound (integer)'
     | '.patch + query + NotFound'
-    | '.patch + id + query id'
   create:
     | '.create'
     | '.create + $select'
@@ -141,15 +142,6 @@ export default (options: MethodTestOptions) => {
             NotFound,
           )
         },
-        '.get + NotFound (string)': async () => {
-          await assert.rejects(
-            () => service.get('568225fbfe21222432e836ff'),
-            NotFound,
-          )
-        },
-        '.get + NotFound (integer)': async () => {
-          await assert.rejects(() => service.get(123141231231), NotFound)
-        },
         '.get + id + query id': async () => {
           const alice = await service.create({
             name: 'Alice',
@@ -163,6 +155,15 @@ export default (options: MethodTestOptions) => {
               }),
             NotFound,
           )
+        },
+        '.get + NotFound (string)': async () => {
+          await assert.rejects(
+            () => service.get('568225fbfe21222432e836ff'),
+            NotFound,
+          )
+        },
+        '.get + NotFound (integer)': async () => {
+          await assert.rejects(() => service.get(123141231231), NotFound)
         },
       },
       remove: {
@@ -192,6 +193,23 @@ export default (options: MethodTestOptions) => {
             () =>
               service.remove(doug[idProp], {
                 query: { name: 'Tester' },
+              }),
+            NotFound,
+          )
+
+          const stillExists = await service.get(doug[idProp])
+          assert.ok(stillExists, 'Doug still exists')
+        },
+        '.remove + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.remove(doug[idProp], {
+                query: { [idProp]: alice[idProp] },
               }),
             NotFound,
           )
@@ -305,28 +323,11 @@ export default (options: MethodTestOptions) => {
             },
           )
         },
-        '.remove + id + query id': async () => {
-          const alice = await service.create({
-            name: 'Alice',
-            age: 12,
-          })
-
-          await assert.rejects(
-            () =>
-              service.remove(doug[idProp], {
-                query: { [idProp]: alice[idProp] },
-              }),
-            NotFound,
-          )
-
-          const stillExists = await service.get(doug[idProp])
-          assert.ok(stillExists, 'Doug still exists')
-        },
       } satisfies TestConfig<'remove'>,
       update: {
         '.update': async () => {
           const originalData = { [idProp]: doug[idProp], name: 'Dougler' }
-          const originalCopy = Object.assign({}, originalData)
+          const originalCopy = { ...originalData }
 
           const data = await service.update(doug[idProp], originalData)
 
@@ -364,6 +365,11 @@ export default (options: MethodTestOptions) => {
 
           const changed = await service.get(doug[idProp])
 
+          assert.strictEqual(
+            changed.name,
+            originalData.name,
+            'data.name changed',
+          )
           assert.strictEqual(changed.age, originalData.age, 'data.age changed')
         },
         '.update + id + query': async () => {
@@ -380,6 +386,34 @@ export default (options: MethodTestOptions) => {
               ),
             NotFound,
           )
+
+          const unchanged = await service.get(doug[idProp])
+          assert.strictEqual(unchanged.name, doug.name, 'name is still Doug')
+        },
+        '.update + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.update(
+                doug[idProp],
+                {
+                  name: 'Dougler',
+                  age: 33,
+                },
+                {
+                  query: { [idProp]: alice[idProp] },
+                },
+              ),
+            NotFound,
+          )
+
+          const unchanged = await service.get(doug[idProp])
+          assert.equal(unchanged.name, doug.name, 'name stayed the same')
+          assert.equal(unchanged.age, doug.age, 'age stayed the same')
         },
         '.update + NotFound (string)': async () => {
           await assert.rejects(
@@ -408,27 +442,6 @@ export default (options: MethodTestOptions) => {
                 dave[idProp],
                 { name: 'UpdatedDave' },
                 { query: { name: 'NotDave' } },
-              ),
-            NotFound,
-          )
-        },
-        '.update + id + query id': async () => {
-          const alice = await service.create({
-            name: 'Alice',
-            age: 12,
-          })
-
-          await assert.rejects(
-            () =>
-              service.update(
-                doug[idProp],
-                {
-                  name: 'Dougler',
-                  age: 33,
-                },
-                {
-                  query: { [idProp]: alice[idProp] },
-                },
               ),
             NotFound,
           )
@@ -476,6 +489,28 @@ export default (options: MethodTestOptions) => {
           const changed = await service.get(doug[idProp])
           assert.strictEqual(changed.age, originalData.age, 'data.age changed')
         },
+
+        '.patch + $select unchanged': async () => {
+          const originalData = {
+            [idProp]: doug[idProp],
+            name: 'PatchDoug',
+          }
+
+          const data = await service.patch(doug[idProp], originalData, {
+            query: { $select: ['name'] },
+          })
+
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id property matches`,
+          )
+          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
+          assert.ok(!('age' in data), 'data.age is not present')
+
+          const changed = await service.get(doug[idProp])
+          assert.strictEqual(changed.age, doug.age, 'data.age unchanged')
+        },
         '.patch + id + query': async () => {
           await assert.rejects(
             () =>
@@ -490,6 +525,33 @@ export default (options: MethodTestOptions) => {
               ),
             NotFound,
           )
+
+          const unchanged = await service.get(doug[idProp])
+          assert.strictEqual(unchanged.name, doug.name, 'name is still Doug')
+        },
+        '.patch + id + query id': async () => {
+          const alice = await service.create({
+            name: 'Alice',
+            age: 12,
+          })
+
+          await assert.rejects(
+            () =>
+              service.patch(
+                doug[idProp],
+                {
+                  age: 33,
+                },
+                {
+                  query: { [idProp]: alice[idProp] },
+                },
+              ),
+            NotFound,
+          )
+
+          const dougAfter = await service.get(doug[idProp])
+
+          assert.equal(dougAfter.age, doug.age, 'age stayed the same')
         },
         '.patch multiple': async () => {
           await withOptions(service, { multi: false }, () =>
@@ -741,43 +803,6 @@ export default (options: MethodTestOptions) => {
               }),
             NotFound,
           )
-        },
-        '.patch + query + NotFound': async () => {
-          const dave = await service.create({ name: 'Dave' })
-
-          await assert.rejects(
-            () =>
-              service.patch(
-                dave[idProp],
-                { name: 'PatchedDave' },
-                { query: { name: 'NotDave' } },
-              ),
-            NotFound,
-          )
-        },
-        '.patch + id + query id': async () => {
-          const alice = await service.create({
-            name: 'Alice',
-            age: 12,
-          })
-
-          await assert.rejects(
-            () =>
-              service.patch(
-                doug[idProp],
-                {
-                  age: 33,
-                },
-                {
-                  query: { [idProp]: alice[idProp] },
-                },
-              ),
-            NotFound,
-          )
-
-          const dougAfter = await service.get(doug[idProp])
-
-          assert.equal(doug.age, dougAfter.age, 'age stayed the same')
         },
       } satisfies TestConfig<'patch'>,
       create: {
