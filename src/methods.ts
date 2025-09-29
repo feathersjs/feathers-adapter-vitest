@@ -53,7 +53,6 @@ type MethodTests = {
     // | '.patch multi + $limit'
     | '.patch + NotFound (string)'
     | '.patch + NotFound (integer)'
-    | '.patch + query + NotFound'
   create:
     | '.create'
     | '.create + $select'
