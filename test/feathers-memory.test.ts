@@ -3,7 +3,12 @@ import { feathers } from '@feathersjs/feathers'
 
 import { MemoryService } from '@feathersjs/memory'
 
-const testSuite = defineTestSuite()
+const testSuite = defineTestSuite({
+  blacklist: [
+    '.update + id + query', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
+    '.update + id + query id', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
+  ],
+})
 
 describe('@feathersjs/memory', () => {
   type Person = {

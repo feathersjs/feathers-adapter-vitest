@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { describe, beforeEach } from 'vitest'
+import { describe, beforeEach, expect } from 'vitest'
 import type { Test } from './declarations.js'
 import type { Application } from '@feathersjs/feathers'
 
@@ -35,38 +34,43 @@ export default (options: BasicTestOptions) => {
 
     const config: TestConfigBasic = {
       '.id': () => {
-        assert.strictEqual(
-          service.id,
-          idProp,
-          'id property is set to expected name',
-        )
+        expect(service.id, 'id property is set to expected name').toBe(idProp)
       },
       '.options': () => {
-        assert.ok(service.options, 'Options are available in service.options')
+        expect(service, 'service.options is defined').toHaveProperty('options')
+
+        expect(
+          service.options,
+          'Options are available in service.options',
+        ).toBeTypeOf('object')
       },
       '.events': () => {
-        assert.ok(
-          service.events.includes('testing'),
-          'service.events is set and includes "testing"',
+        expect(service, 'service has events').toHaveProperty('events')
+        expect(service.events, 'service.events is an array').toBeInstanceOf(
+          Array,
         )
+        expect(
+          service.events.includes('testing'),
+          'service.events includes "testing"',
+        ).toBe(true)
       },
       '._get': () => {
-        assert.strictEqual(typeof service._get, 'function')
+        expect(typeof service._get).toBe('function')
       },
       '._find': () => {
-        assert.strictEqual(typeof service._find, 'function')
+        expect(typeof service._find).toBe('function')
       },
       '._create': () => {
-        assert.strictEqual(typeof service._create, 'function')
+        expect(typeof service._create).toBe('function')
       },
       '._update': () => {
-        assert.strictEqual(typeof service._update, 'function')
+        expect(typeof service._update).toBe('function')
       },
       '._patch': () => {
-        assert.strictEqual(typeof service._patch, 'function')
+        expect(typeof service._patch).toBe('function')
       },
       '._remove': () => {
-        assert.strictEqual(typeof service._remove, 'function')
+        expect(typeof service._remove).toBe('function')
       },
     }
 
