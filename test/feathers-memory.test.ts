@@ -2,6 +2,7 @@ import { defineTestSuite } from '../src/index.js'
 import { feathers } from '@feathersjs/feathers'
 
 import { MemoryService } from '@feathersjs/memory'
+import { describe } from 'vitest'
 
 const testSuite = defineTestSuite({
   blacklist: [
@@ -35,7 +36,7 @@ describe('@feathersjs/memory', () => {
     'people',
     new MemoryService<Person>({
       events,
-    }),
+    })
   )
 
   app.use(
@@ -47,7 +48,7 @@ describe('@feathersjs/memory', () => {
         default: 10,
         max: 100,
       },
-    }),
+    })
   )
 
   app.use(
@@ -55,7 +56,7 @@ describe('@feathersjs/memory', () => {
     new MemoryService<Person>({
       id: 'customid',
       events,
-    }),
+    })
   )
 
   testSuite({ app, serviceName: 'people' })

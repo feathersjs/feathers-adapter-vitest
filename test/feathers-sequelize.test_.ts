@@ -4,7 +4,7 @@ import { DataTypes, Sequelize } from 'sequelize'
 import { feathers } from '@feathersjs/feathers'
 import { SequelizeService } from 'feathers-sequelize'
 import { defineTestSuite } from '../src/index.js'
-import { beforeAll } from 'vitest'
+import { beforeAll, describe } from 'vitest'
 
 const testSuite = defineTestSuite({
   blacklist: [
@@ -31,7 +31,7 @@ const sequelize = new Sequelize(
       : 5432,
     host: 'localhost',
     dialect: 'postgres',
-  },
+  }
 )
 
 const Model = sequelize.define(
@@ -57,7 +57,7 @@ const Model = sequelize.define(
   },
   {
     freezeTableName: true,
-  },
+  }
 )
 
 const CustomId = sequelize.define(
@@ -84,7 +84,7 @@ const CustomId = sequelize.define(
   },
   {
     freezeTableName: true,
-  },
+  }
 )
 
 describe('Feathers Sequelize Service', () => {
@@ -103,14 +103,14 @@ describe('Feathers Sequelize Service', () => {
         new SequelizeService({
           Model,
           events: ['testing'],
-        }),
+        })
       )
       .use(
         'people-customid',
         new SequelizeService({
           Model: CustomId,
           events: ['testing'],
-        }),
+        })
       )
 
     testSuite({ app, serviceName: 'people', idProp: 'id' })
