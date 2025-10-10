@@ -36,7 +36,7 @@ describe('@feathersjs/memory', () => {
     'people',
     new MemoryService<Person>({
       events,
-    })
+    }),
   )
 
   app.use(
@@ -48,7 +48,7 @@ describe('@feathersjs/memory', () => {
         default: 10,
         max: 100,
       },
-    })
+    }),
   )
 
   app.use(
@@ -56,7 +56,7 @@ describe('@feathersjs/memory', () => {
     new MemoryService<Person>({
       id: 'customid',
       events,
-    })
+    }),
   )
 
   testSuite({ app, serviceName: 'people' })
