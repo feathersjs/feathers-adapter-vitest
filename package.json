@@ -10,10 +10,10 @@
   "author": "Feathers Community",
   "repository": {
     "type": "git",
-    "url": "git://github.com/feathers-community/feathers-adapter-vitest.git"
+    "url": "git://github.com/feathersjs/feathers-adapter-vitest.git"
   },
   "bugs": {
-    "url": "https://github.com/feathers-community/feathers-adapter-vitest/issues"
+    "url": "https://github.com/feathersjs/feathers-adapter-vitest/issues"
   },
   "type": "module",
   "funding": {
