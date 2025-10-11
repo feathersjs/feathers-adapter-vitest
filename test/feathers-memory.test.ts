@@ -2,6 +2,7 @@ import { defineTestSuite } from '../src/index.js'
 import { feathers } from '@feathersjs/feathers'
 
 import { MemoryService } from '@feathersjs/memory'
+import { describe } from 'vitest'
 
 const testSuite = defineTestSuite({
   blacklist: [

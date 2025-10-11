@@ -5,7 +5,7 @@ import type { AdapterTestNameMethods } from './methods.js'
 import methodTests from './methods.js'
 import type { AdapterTestNameSyntax } from './syntax.js'
 import syntaxTests from './syntax.js'
-import { describe, it } from 'vitest'
+import { describe, it, beforeAll, assert } from 'vitest'
 
 export type TestSuiteOptions = {
   app: Application

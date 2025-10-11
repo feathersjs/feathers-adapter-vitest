@@ -4,7 +4,7 @@ import { DataTypes, Sequelize } from 'sequelize'
 import { feathers } from '@feathersjs/feathers'
 import { SequelizeService } from 'feathers-sequelize'
 import { defineTestSuite } from '../src/index.js'
-import { beforeAll } from 'vitest'
+import { beforeAll, describe } from 'vitest'
 
 const testSuite = defineTestSuite({
   blacklist: [

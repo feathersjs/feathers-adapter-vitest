@@ -1,5 +1,6 @@
 import { MemoryService } from '@feathersjs/memory'
 import { withOptions } from '../src/utils.js'
+import { describe, expect, it } from 'vitest'
 
 describe('utils', () => {
   describe('witOptions', () => {
