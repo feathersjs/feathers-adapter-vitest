@@ -47,10 +47,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@feathersjs/errors": "^5.0.35",
-    "@feathersjs/feathers": "^5.0.35"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@feathers-community/eslint-config": "^0.0.8",
     "@feathersjs/knex": "^5.0.35",
@@ -65,16 +62,12 @@
     "pg": "^8.16.3",
     "sequelize": "^6.37.7",
     "shx": "^0.4.0",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
-    "@feathersjs/knex": ">=5",
-    "@feathersjs/memory": ">=5",
-    "feathers-sequelize": ">=7",
-    "pg": ">=8",
-    "sequelize": ">=6",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "@feathersjs/errors": "^5.0.0",
+    "@feathersjs/feathers": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "@feathersjs/knex": {
