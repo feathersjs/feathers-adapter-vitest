@@ -9,11 +9,14 @@ importers:
   .:
     dependencies:
       '@feathersjs/errors':
-        specifier: ^5.0.35
+        specifier: ^5.0.0
         version: 5.0.35
       '@feathersjs/feathers':
-        specifier: ^5.0.35
+        specifier: ^5.0.0
         version: 5.0.35
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.3.1)
     devDependencies:
       '@feathers-community/eslint-config':
         specifier: ^0.0.8
@@ -57,9 +60,6 @@ importers:
       typescript:
         specifier: ^5.9.2
         version: 5.9.2
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.3.1)
 
 packages:
 
