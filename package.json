@@ -50,41 +50,17 @@
   "dependencies": {},
   "devDependencies": {
     "@feathers-community/eslint-config": "^0.0.9",
-    "@feathersjs/knex": "^5.0.35",
     "@feathersjs/memory": "^5.0.35",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^24.8.1",
-    "@types/pg": "^8.15.5",
-    "@types/sequelize": "^6.12.0",
     "dotenv": "^17.2.3",
     "eslint": "^9.38.0",
-    "feathers-sequelize": "^7.0.3",
-    "pg": "^8.16.3",
-    "sequelize": "^6.37.7",
-    "shx": "^0.4.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "@feathersjs/errors": "^5.0.0",
     "@feathersjs/feathers": "^5.0.0",
     "vitest": "^3.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@feathersjs/knex": {
-      "optional": true
-    },
-    "@feathersjs/memory": {
-      "optional": true
-    },
-    "feathers-sequelize": {
-      "optional": true
-    },
-    "pg": {
-      "optional": true
-    },
-    "sequelize": {
-      "optional": true
-    }
   },
   "packageManager": "pnpm@10.18.3"
 }
