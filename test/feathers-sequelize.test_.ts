@@ -7,7 +7,7 @@ import { defineTestSuite } from '../src/index.js'
 import { beforeAll, describe } from 'vitest'
 
 const testSuite = defineTestSuite({
-  blacklist: [
+  skip: [
     '.get + NotFound (string)',
     '.patch + NotFound (string)',
     '.remove + NotFound (string)',

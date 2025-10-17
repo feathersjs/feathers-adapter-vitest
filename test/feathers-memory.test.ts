@@ -5,7 +5,7 @@ import { MemoryService } from '@feathersjs/memory'
 import { describe } from 'vitest'
 
 const testSuite = defineTestSuite({
-  blacklist: [
+  skip: [
     '.update + id + query', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
     '.update + id + query id', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
   ],
