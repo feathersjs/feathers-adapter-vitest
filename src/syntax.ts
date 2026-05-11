@@ -22,7 +22,9 @@ type SyntaxTests = {
   operators:
     | '.find + $or'
     | '.find + $in'
+    | '.find + $in empty'
     | '.find + $nin'
+    | '.find + $nin empty'
     | '.find + $lt'
     | '.find + $lte'
     | '.find + $gt'
@@ -218,6 +220,16 @@ export default (options: SyntaxTestOptions) => {
           assert.strictEqual(data[0].name, 'Alice', 'first item')
           assert.strictEqual(data[1].name, 'Bob', 'second item')
         },
+        '.find + $in empty': async () => {
+          const data = await service.find({
+            query: {
+              name: { $in: [] },
+            },
+          })
+
+          assert.ok(Array.isArray(data), 'data is an array')
+          assert.strictEqual(data.length, 0, 'no items match $in: []')
+        },
         '.find + $nin': async () => {
           const data = await service.find({
             query: {
@@ -229,6 +241,19 @@ export default (options: SyntaxTestOptions) => {
 
           assert.strictEqual(data.length, 1, 'correct data.length')
           assert.strictEqual(data[0].name, 'Doug', 'correct item')
+        },
+        '.find + $nin empty': async () => {
+          const data = await service.find({
+            query: {
+              name: { $nin: [] },
+              $sort: { name: 1 },
+            },
+          })
+
+          assert.strictEqual(data.length, 3, 'all items match $nin: []')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          assert.strictEqual(data[2].name, 'Doug', 'third item')
         },
         '.find + $lt': async () => {
           const data = await service.find({

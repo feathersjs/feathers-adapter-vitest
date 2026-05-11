@@ -29,6 +29,7 @@ type MethodTests = {
     | '.remove + NotFound (string)'
     | '.remove + NotFound (integer)'
     | '.remove + multi'
+    | '.remove + multi empty result'
     | '.remove + multi no pagination'
   update:
     | '.update'
@@ -40,6 +41,8 @@ type MethodTests = {
     | '.update + query + NotFound'
   patch:
     | '.patch'
+    | '.patch + empty data'
+    | '.patch + data contains id'
     | '.patch + $select'
     | '.patch + $select unchanged'
     | '.patch + id + query'
@@ -48,6 +51,9 @@ type MethodTests = {
     | '.patch multiple no pagination'
     | '.patch multi query same'
     | '.patch multi query changed'
+    | '.patch multi + empty data'
+    | '.patch multi + empty result'
+    | '.patch multi + $select'
     // | '.patch multi + $sort'
     // | '.patch multi + $skip'
     // | '.patch multi + $limit'
@@ -57,6 +63,7 @@ type MethodTests = {
     | '.create'
     | '.create + $select'
     | '.create multi'
+    | '.create multi + empty array'
     | '.create ignores query'
   internal:
     | 'internal .find'
@@ -262,6 +269,23 @@ export default (options: MethodTestOptions) => {
             assert.ok(names.includes('David'), 'David removed')
           })
         },
+        '.remove + multi empty result': async () => {
+          await withOptions(service, { multi: true }, async () => {
+            const data = await service.remove(null, {
+              query: { name: 'NoSuchName' },
+            })
+
+            assert.ok(Array.isArray(data), 'data is an array')
+            assert.strictEqual(data.length, 0, 'returned no entries')
+
+            const dougAfter = await service.get(doug[idProp])
+            assert.strictEqual(
+              dougAfter.name,
+              doug.name,
+              'doug untouched by empty-result remove',
+            )
+          })
+        },
         '.remove + multi no pagination': async () => {
           await clean()
 
@@ -465,6 +489,70 @@ export default (options: MethodTestOptions) => {
           )
           assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
           assert.strictEqual(data.age, 32, 'data.age matches')
+        },
+        '.patch + empty data': async () => {
+          const data = await service.patch(doug[idProp], {})
+
+          assert.strictEqual(
+            data[idProp].toString(),
+            doug[idProp].toString(),
+            `${idProp} id matches`,
+          )
+          assert.strictEqual(data.name, doug.name, 'data.name unchanged')
+          assert.strictEqual(data.age, doug.age, 'data.age unchanged')
+
+          const fetched = await service.get(doug[idProp])
+          assert.strictEqual(
+            fetched.name,
+            doug.name,
+            'persisted name unchanged',
+          )
+          assert.strictEqual(fetched.age, doug.age, 'persisted age unchanged')
+        },
+        '.patch + data contains id': async () => {
+          const alice = await service.create({ name: 'Alice', age: 12 })
+
+          const matching = await service.patch(doug[idProp], {
+            [idProp]: doug[idProp],
+            name: 'PatchDoug',
+          })
+          assert.strictEqual(
+            matching[idProp].toString(),
+            doug[idProp].toString(),
+            'matching id in data: returned id matches',
+          )
+          assert.strictEqual(
+            matching.name,
+            'PatchDoug',
+            'matching id in data: name patched',
+          )
+
+          const differing = await service.patch(doug[idProp], {
+            [idProp]: alice[idProp],
+            name: 'PatchDougAgain',
+          })
+          assert.strictEqual(
+            differing[idProp].toString(),
+            doug[idProp].toString(),
+            'differing id in data: url id takes precedence',
+          )
+          assert.strictEqual(
+            differing.name,
+            'PatchDougAgain',
+            'differing id in data: doug was patched',
+          )
+
+          const aliceAfter = await service.get(alice[idProp])
+          assert.strictEqual(
+            aliceAfter.name,
+            'Alice',
+            'differing id in data: alice unchanged',
+          )
+          assert.strictEqual(
+            aliceAfter.age,
+            12,
+            'differing id in data: alice age unchanged',
+          )
         },
         '.patch + $select': async () => {
           const originalData = {
@@ -714,6 +802,93 @@ export default (options: MethodTestOptions) => {
             assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
           })
         },
+        '.patch multi + empty data': async () => {
+          await withOptions(service, { multi: true }, async () => {
+            const dave = await service.create({
+              name: 'Dave',
+              age: 29,
+              created: true,
+            })
+            const david = await service.create({
+              name: 'David',
+              age: 3,
+              created: true,
+            })
+
+            const data = await service.patch(
+              null,
+              {},
+              { query: { created: true } },
+            )
+
+            assert.strictEqual(data.length, 2, 'returned two entries')
+            const byId = new Map<string, any>(
+              data.map((item: any) => [item[idProp].toString(), item]),
+            )
+            const daveAfter = byId.get(dave[idProp].toString())
+            const davidAfter = byId.get(david[idProp].toString())
+            assert.ok(daveAfter, 'dave is included')
+            assert.ok(davidAfter, 'david is included')
+            assert.strictEqual(daveAfter.name, 'Dave', 'dave name unchanged')
+            assert.strictEqual(daveAfter.age, 29, 'dave age unchanged')
+            assert.strictEqual(davidAfter.name, 'David', 'david name unchanged')
+            assert.strictEqual(davidAfter.age, 3, 'david age unchanged')
+          })
+        },
+        '.patch multi + empty result': async () => {
+          await withOptions(service, { multi: true }, async () => {
+            const data = await service.patch(
+              null,
+              { age: 99 },
+              { query: { name: 'NoSuchName' } },
+            )
+
+            assert.ok(Array.isArray(data), 'data is an array')
+            assert.strictEqual(data.length, 0, 'returned no entries')
+
+            const dougAfter = await service.get(doug[idProp])
+            assert.strictEqual(
+              dougAfter.age,
+              doug.age,
+              'doug age untouched by empty-result patch',
+            )
+          })
+        },
+        '.patch multi + $select': async () => {
+          await withOptions(service, { multi: true }, async () => {
+            const dave = await service.create({
+              name: 'Dave',
+              age: 29,
+              created: true,
+            })
+            const david = await service.create({
+              name: 'David',
+              age: 3,
+              created: true,
+            })
+
+            const data = await service.patch(
+              null,
+              { age: 2 },
+              {
+                query: { created: true, $select: ['name'] },
+              },
+            )
+
+            assert.strictEqual(data.length, 2, 'returned two entries')
+            for (const item of data) {
+              assert.ok(idProp in item, 'id is present')
+              assert.ok('name' in item, 'name is present')
+              assert.ok(!('age' in item), 'age is not present')
+              assert.ok(!('created' in item), 'created is not present')
+            }
+
+            const daveAfter = await service.get(dave[idProp])
+            const davidAfter = await service.get(david[idProp])
+            assert.strictEqual(daveAfter.age, 2, 'dave age was patched')
+            assert.strictEqual(davidAfter.age, 2, 'david age was patched')
+          })
+        },
         // '.patch multi + $sort': async () => {
         //   const users = await Promise.all(
         //     ['A', 'B', 'C'].map((name) =>
@@ -896,6 +1071,23 @@ export default (options: MethodTestOptions) => {
               assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
             },
           )
+        },
+        '.create multi + empty array': async () => {
+          await withOptions(service, { multi: ['create'] }, async () => {
+            const before = await service.find({ paginate: false })
+
+            const data = await service.create([])
+
+            assert.ok(Array.isArray(data), 'data is an array')
+            assert.strictEqual(data.length, 0, 'returned no entries')
+
+            const after = await service.find({ paginate: false })
+            assert.strictEqual(
+              after.length,
+              before.length,
+              'no records were created',
+            )
+          })
         },
       } satisfies TestConfig<'create'>,
     }
