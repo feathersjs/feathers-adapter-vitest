@@ -1,6 +1,6 @@
 {
   "name": "feathers-adapter-vitest",
-  "version": "0.0.13",
+  "version": "0.0.15",
   "description": "Feathers shared database adapter test suite with vitest",
   "homepage": "https://feathersjs.com",
   "keywords": [
@@ -10,10 +10,10 @@
   "author": "Feathers Community",
   "repository": {
     "type": "git",
-    "url": "git://github.com/feathers-community/feathers-adapter-vitest.git"
+    "url": "git://github.com/feathersjs/feathers-adapter-vitest.git"
   },
   "bugs": {
-    "url": "https://github.com/feathers-community/feathers-adapter-vitest/issues"
+    "url": "https://github.com/feathersjs/feathers-adapter-vitest/issues"
   },
   "type": "module",
   "funding": {
@@ -21,7 +21,7 @@
     "url": "https://opencollective.com/feathers"
   },
   "engines": {
-    "node": ">= 22"
+    "node": ">= 20"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,51 +47,20 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@feathersjs/errors": "^5.0.44",
-    "@feathersjs/feathers": "^5.0.44"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@feathers-community/eslint-config": "^0.1.0",
-    "@feathersjs/knex": "^5.0.44",
     "@feathersjs/memory": "^5.0.44",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^25.6.2",
-    "@types/pg": "^8.20.0",
     "dotenv": "^17.4.2",
     "eslint": "^10.3.0",
-    "feathers-sequelize": "^7.0.3",
-    "pg": "^8.20.0",
-    "sequelize": "^6.37.8",
-    "shx": "^0.4.0",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.12",
-    "vitest": "^4.1.5"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@feathersjs/knex": ">=5",
-    "@feathersjs/memory": ">=5",
-    "feathers-sequelize": ">=7",
-    "pg": ">=8",
-    "sequelize": ">=6",
+    "@feathersjs/errors": "^5.0.0",
+    "@feathersjs/feathers": "^5.0.0",
     "vitest": "^3.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@feathersjs/knex": {
-      "optional": true
-    },
-    "@feathersjs/memory": {
-      "optional": true
-    },
-    "feathers-sequelize": {
-      "optional": true
-    },
-    "pg": {
-      "optional": true
-    },
-    "sequelize": {
-      "optional": true
-    }
   },
   "packageManager": "pnpm@11.0.9"
 }
