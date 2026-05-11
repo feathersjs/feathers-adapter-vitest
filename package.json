@@ -48,25 +48,24 @@
     "access": "public"
   },
   "dependencies": {
-    "@feathersjs/errors": "^5.0.35",
-    "@feathersjs/feathers": "^5.0.35"
+    "@feathersjs/errors": "^5.0.44",
+    "@feathersjs/feathers": "^5.0.44"
   },
   "devDependencies": {
-    "@feathers-community/eslint-config": "^0.0.8",
-    "@feathersjs/knex": "^5.0.35",
-    "@feathersjs/memory": "^5.0.35",
-    "@tsconfig/node22": "^22.0.2",
-    "@types/node": "^24.3.1",
-    "@types/pg": "^8.15.5",
-    "@types/sequelize": "^6.12.0",
-    "dotenv": "^17.2.2",
-    "eslint": "^9.35.0",
+    "@feathers-community/eslint-config": "^0.1.0",
+    "@feathersjs/knex": "^5.0.44",
+    "@feathersjs/memory": "^5.0.44",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.6.2",
+    "@types/pg": "^8.20.0",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.3.0",
     "feathers-sequelize": "^7.0.3",
-    "pg": "^8.16.3",
-    "sequelize": "^6.37.7",
+    "pg": "^8.20.0",
+    "sequelize": "^6.37.8",
     "shx": "^0.4.0",
-    "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
   },
   "peerDependencies": {
     "@feathersjs/knex": ">=5",
@@ -93,5 +92,5 @@
       "optional": true
     }
   },
-  "packageManager": "pnpm@10.12.3"
+  "packageManager": "pnpm@11.0.9"
 }
