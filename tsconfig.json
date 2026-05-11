@@ -3,7 +3,10 @@
   "include": ["src/**/*.ts"],
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",
     "declaration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "moduleResolution": "nodenext",
+    "types": ["node"]
   }
 }

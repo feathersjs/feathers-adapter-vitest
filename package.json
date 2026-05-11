@@ -49,18 +49,18 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@feathers-community/eslint-config": "^0.0.9",
-    "@feathersjs/memory": "^5.0.35",
-    "@tsconfig/node22": "^22.0.2",
-    "@types/node": "^24.8.1",
-    "dotenv": "^17.2.3",
-    "eslint": "^9.38.0",
-    "typescript": "^5.9.3"
+    "@feathers-community/eslint-config": "^0.1.0",
+    "@feathersjs/memory": "^5.0.44",
+    "@tsconfig/node22": "^22.0.5",
+    "@types/node": "^25.6.2",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.3.0",
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
     "@feathersjs/errors": "^5.0.0",
     "@feathersjs/feathers": "^5.0.0",
     "vitest": "^3.0.0"
   },
-  "packageManager": "pnpm@10.18.3"
+  "packageManager": "pnpm@11.0.9"
 }
