@@ -5,6 +5,7 @@ import type { AdapterTestNameMethods } from './methods.js'
 import methodTests from './methods.js'
 import type { AdapterTestNameSyntax } from './syntax.js'
 import syntaxTests from './syntax.js'
+import type { RecommendedOperator } from './declarations.js'
 import { describe, it, beforeAll, assert } from 'vitest'
 
 export type TestSuiteOptions = {
@@ -30,13 +31,25 @@ export type DefineTestSuiteOptions = {
   blacklist?: AdapterTestName[]
   skip?: AdapterTestName[]
   only?: AdapterTestName[]
+  /**
+   * Opt in to recommended (non-standard) operator tests per operator.
+   * These tests are skipped by default. The adapter under test must support
+   * the operator (and, if applicable, whitelist it via its `operators` option).
+   *
+   * @example ['$not', '$regex']
+   */
+  recommended?: RecommendedOperator[]
 }
 
 export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
   return (options: TestSuiteOptions) => {
     const { app, serviceName, idProp = 'id' } = options
 
-    const test = (name: string, runner: any) => {
+    const test = (
+      name: string,
+      runner: any,
+      testOptions?: { recommended?: RecommendedOperator },
+    ) => {
       let skip = false
       const skipNames = defineOptions?.skip || defineOptions?.blacklist || []
       if (skipNames.includes(name as AdapterTestName)) {
@@ -45,6 +58,14 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
       if (
         defineOptions?.only?.length &&
         !defineOptions.only.includes(name as AdapterTestName)
+      ) {
+        skip = true
+      }
+      // recommended operator tests are opt-in: skipped unless the operator is
+      // explicitly enabled via `recommended: ['$not', ...]`
+      if (
+        testOptions?.recommended &&
+        !defineOptions?.recommended?.includes(testOptions.recommended)
       ) {
         skip = true
       }
