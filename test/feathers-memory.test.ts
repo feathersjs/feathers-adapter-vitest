@@ -5,10 +5,8 @@ import { MemoryService } from '@feathersjs/memory'
 import { describe } from 'vitest'
 
 const testSuite = defineTestSuite({
-  skip: [
-    '.update + id + query', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
-    '.update + id + query id', // need to be fixed upstream, see https://github.com/feathersjs/feathers/pull/3617
-  ],
+  skip: [],
+  recommended: ['$not', '$regex'],
 })
 
 describe('@feathersjs/memory', () => {
@@ -36,6 +34,8 @@ describe('@feathersjs/memory', () => {
     'people',
     new MemoryService<Person>({
       events,
+      operators: ['$not', '$regex', '$options'],
+      filters: { $not: (value) => value },
     }),
   )
 
@@ -56,6 +56,8 @@ describe('@feathersjs/memory', () => {
     new MemoryService<Person>({
       id: 'customid',
       events,
+      operators: ['$not', '$regex', '$options'],
+      filters: { $not: (value) => value },
     }),
   )
 
