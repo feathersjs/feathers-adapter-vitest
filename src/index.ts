@@ -5,6 +5,8 @@ import type { AdapterTestNameMethods } from './methods.js'
 import methodTests from './methods.js'
 import type { AdapterTestNameSyntax } from './syntax.js'
 import syntaxTests from './syntax.js'
+import type { AdapterTestNameRecommended } from './recommended.js'
+import recommendedTests from './recommended.js'
 import type { RecommendedOperator } from './declarations.js'
 import { describe, it, beforeAll, assert } from 'vitest'
 
@@ -21,6 +23,7 @@ export type AdapterTestName =
   | AdapterTestNameBasic
   | AdapterTestNameMethods
   | AdapterTestNameSyntax
+  | AdapterTestNameRecommended
 
 export type AdapterTestMap = Record<AdapterTestName, boolean>
 
@@ -138,6 +141,7 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
       basicTests({ test, app, serviceName, idProp })
       methodTests({ test, app, serviceName, idProp })
       syntaxTests({ test, app, serviceName, idProp })
+      recommendedTests({ test, app, serviceName, idProp })
     })
   }
 }

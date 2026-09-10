@@ -1,7 +1,7 @@
 import assert from 'node:assert'
 import { describe, beforeEach, afterEach } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
-import type { RecommendedOperator, Test } from './declarations.js'
+import type { Test } from './declarations.js'
 import { withOptions } from './utils.js'
 
 type SyntaxTestOptions = {
@@ -46,14 +46,6 @@ type SyntaxTests = {
     | '.find + paginate + $limit + $skip'
     | '.find + paginate + $limit 0'
     | '.find + paginate + params'
-  recommended:
-    | '.find + $not'
-    | '.find + $not + nested'
-    | '.find + $not + multi-key'
-    | '.find + $not + operator'
-    | '.find + $not + $or'
-    | '.find + $regex'
-    | '.find + $regex + $options'
 }
 
 export type AdapterTestNameSyntax = SyntaxTests[keyof SyntaxTests]
@@ -517,122 +509,6 @@ export default (options: SyntaxTestOptions) => {
         }
       })
     }
-
-    // Opt-in tests for common (but non-standard) operators, skipped by default
-    // and enabled per operator via `defineTestSuite({ recommended: [...] })`.
-    const recommendedConfig = {
-      // `$not` negates a whole condition at the top level (not a per-property
-      // inversion). Adapters that support it may need to register it as a top
-      // level filter (e.g. `filters: { $not: (v) => v }`) in addition to the
-      // `operators` list.
-      $not: {
-        '.find + $not': async () => {
-          const data = await service.find({
-            query: {
-              $not: { name: 'Bob' },
-              $sort: { name: 1 },
-            },
-          })
-
-          // NOT (name = 'Bob') → Alice, Doug
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
-        },
-        '.find + $not + nested': async () => {
-          const data = await service.find({
-            query: {
-              $and: [{ $not: { name: 'Bob' } }],
-              $sort: { name: 1 },
-            },
-          })
-
-          // $not nested inside $and → Alice, Doug
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
-        },
-        '.find + $not + multi-key': async () => {
-          // Carol shares Bob's age but has a different name
-          await service.create({ name: 'Carol', age: 25 })
-
-          const data = await service.find({
-            query: {
-              $not: { age: 25, name: 'Bob' },
-              $sort: { name: 1 },
-            },
-          })
-
-          // NOT (age = 25 AND name = 'Bob') removes only Bob; Carol (age 25 but
-          // name != 'Bob') is kept. A per-property inversion would wrongly drop it.
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Carol', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
-        },
-        '.find + $not + operator': async () => {
-          const data = await service.find({
-            query: {
-              $not: { age: { $gt: 25 } },
-              $sort: { name: 1 },
-            },
-          })
-
-          // NOT (age > 25) → Alice (19), Bob (25); Doug (32) excluded
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-        },
-        '.find + $not + $or': async () => {
-          const data = await service.find({
-            query: {
-              $not: { $or: [{ name: 'Bob' }, { name: 'Alice' }] },
-              $sort: { name: 1 },
-            },
-          })
-
-          // De Morgan: NOT (name = 'Bob' OR name = 'Alice') → Doug
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
-        },
-      },
-      $regex: {
-        '.find + $regex': async () => {
-          const data = await service.find({
-            query: {
-              name: { $regex: 'li' },
-            },
-          })
-
-          // only 'Alice' contains 'li'
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
-        },
-        '.find + $regex + $options': async () => {
-          const data = await service.find({
-            query: {
-              name: { $regex: 'alice', $options: 'i' },
-            },
-          })
-
-          // case-insensitive → 'Alice'
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
-        },
-      },
-    } satisfies Record<RecommendedOperator, Partial<TestConfig<'recommended'>>>
-
-    describe('recommended', () => {
-      for (const operator in recommendedConfig) {
-        for (const testName in (recommendedConfig as any)[operator]) {
-          test(
-            testName,
-            async () => (recommendedConfig as any)[operator][testName](),
-            { recommended: operator as RecommendedOperator },
-          )
-        }
-      }
-    })
 
     describe('paginate', function () {
       const paginateConfig: TestConfig<'paginate'> = {
