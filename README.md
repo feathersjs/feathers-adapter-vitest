@@ -41,19 +41,29 @@ per operator and skipped by default:
 
 ```ts
 const testSuite = defineTestSuite({
-  recommended: ["$not", "$regex"],
+  recommended: ["$not", "$regex", "$between", "$notBetween"],
 });
 ```
 
+Available operators:
+
+| operator      | expects          | semantics                                                    |
+| ------------- | ---------------- | ------------------------------------------------------------ |
+| `$not`        | a query          | negates a whole condition: `{ $not: { age: 20 } }`           |
+| `$regex`      | a pattern        | `{ name: { $regex: "li", $options: "i" } }`                  |
+| `$between`    | `[min, max]`     | range, **inclusive** on both bounds (like SQL `BETWEEN`)     |
+| `$notBetween` | `[min, max]`     | outside that range, so **both bounds are excluded**          |
+
 Only enable an operator if your adapter supports it. Note that some adapters (e.g.
 those built on `@feathersjs/adapter-commons`) reject unknown query syntax unless it
-is whitelisted. Property-level operators (`$regex`, `$options`) go in the `operators`
-list, while `$not` is a **top-level** filter that negates a whole condition
-(`{ $not: { age: 20 } }`), so it also needs a `filters` entry:
+is whitelisted. Property-level operators (`$regex`, `$options`, `$between`,
+`$notBetween`) go in the `operators` list, while `$not` is a **top-level** filter
+that negates a whole condition (`{ $not: { age: 20 } }`), so it also needs a
+`filters` entry:
 
 ```ts
 new MyService({
-  operators: ["$regex", "$options", "$not"],
+  operators: ["$regex", "$options", "$between", "$notBetween", "$not"],
   filters: { $not: (value) => value },
 });
 ```

@@ -3,10 +3,34 @@ import { feathers } from '@feathersjs/feathers'
 
 import { MemoryService } from '@feathersjs/memory'
 import { describe } from 'vitest'
+import sift, { createEqualsOperation } from 'sift'
+import type { Options } from 'sift'
+
+// sift has no `$between`/`$notBetween`, so extend it with both. They take a
+// `[min, max]` tuple and are inclusive on both bounds, like SQL `BETWEEN`.
+const between =
+  (negate: boolean) => (params: any, ownerQuery: any, options: Options) =>
+    createEqualsOperation(
+      (value: any) => {
+        const [min, max] = params
+        const inRange = value >= min && value <= max
+        return negate ? !inRange : inRange
+      },
+      ownerQuery,
+      options,
+    )
+
+const matcher = (query: any) =>
+  sift(query, {
+    operations: {
+      $between: between(false),
+      $notBetween: between(true),
+    },
+  })
 
 const testSuite = defineTestSuite({
   skip: [],
-  recommended: ['$not', '$regex'],
+  recommended: ['$not', '$regex', '$between', '$notBetween'],
 })
 
 describe('@feathersjs/memory', () => {
@@ -34,8 +58,9 @@ describe('@feathersjs/memory', () => {
     'people',
     new MemoryService<Person>({
       events,
-      operators: ['$not', '$regex', '$options'],
+      operators: ['$not', '$regex', '$options', '$between', '$notBetween'],
       filters: { $not: (value) => value },
+      matcher,
     }),
   )
 
@@ -56,8 +81,9 @@ describe('@feathersjs/memory', () => {
     new MemoryService<Person>({
       id: 'customid',
       events,
-      operators: ['$not', '$regex', '$options'],
+      operators: ['$not', '$regex', '$options', '$between', '$notBetween'],
       filters: { $not: (value) => value },
+      matcher,
     }),
   )
 

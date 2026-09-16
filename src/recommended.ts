@@ -21,6 +21,11 @@ type RecommendedTests = {
     | '.find + $not + $or + operator'
     | '.find + $not + $not'
   $regex: '.find + $regex' | '.find + $regex + $options'
+  $between:
+    | '.find + $between'
+    | '.find + $between + no match'
+    | '.find + $between + query'
+  $notBetween: '.find + $notBetween' | '.find + $notBetween + query'
 }
 
 export type AdapterTestNameRecommended =
@@ -204,6 +209,73 @@ export default (options: RecommendedTestOptions) => {
           // case-insensitive → 'Alice'
           assert.strictEqual(data.length, 1, 'correct data.length')
           assert.strictEqual(data[0].name, 'Alice', 'correct name')
+        },
+      },
+      // `$between` / `$notBetween` take a `[min, max]` tuple and are inclusive
+      // on both bounds (like SQL `BETWEEN`), so `$notBetween` excludes both.
+      $between: {
+        '.find + $between': async () => {
+          const data = await service.find({
+            query: {
+              age: { $between: [19, 25] },
+              $sort: { name: 1 },
+            },
+          })
+
+          // inclusive on both bounds → Alice (19) and Bob (25), not Doug (32)
+          assert.strictEqual(data.length, 2, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+        },
+        '.find + $between + no match': async () => {
+          const data = await service.find({
+            query: {
+              age: { $between: [26, 31] },
+            },
+          })
+
+          // range between Bob (25) and Doug (32) matches nobody
+          assert.strictEqual(data.length, 0, 'no results')
+        },
+        '.find + $between + query': async () => {
+          const data = await service.find({
+            query: {
+              age: { $between: [19, 32] },
+              name: 'Doug',
+            },
+          })
+
+          // combined with another condition: the range must AND-compose with it
+          assert.strictEqual(data.length, 1, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+        },
+      },
+      $notBetween: {
+        '.find + $notBetween': async () => {
+          const data = await service.find({
+            query: {
+              age: { $notBetween: [19, 25] },
+              $sort: { name: 1 },
+            },
+          })
+
+          // both bounds belong to the range, so Alice (19) and Bob (25) are
+          // excluded → Doug (32)
+          assert.strictEqual(data.length, 1, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+        },
+        '.find + $notBetween + query': async () => {
+          const data = await service.find({
+            query: {
+              age: { $notBetween: [20, 30] },
+              name: 'Alice',
+            },
+          })
+
+          // combined with another condition: proves the negated range binds to
+          // its own property instead of negating the whole query
+          assert.strictEqual(data.length, 1, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'correct item')
         },
       },
     } satisfies TestConfig

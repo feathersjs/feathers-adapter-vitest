@@ -1,4 +1,4 @@
-export type RecommendedOperator = '$not' | '$regex'
+export type RecommendedOperator = '$not' | '$regex' | '$between' | '$notBetween'
 
 export type Test = (
   name: string,
