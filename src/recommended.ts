@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { describe, beforeEach, afterEach } from 'vitest'
+import { describe, beforeEach, afterEach, expect } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import type { RecommendedOperator, Test } from './declarations.js'
 
@@ -83,9 +82,9 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // NOT (name = 'Bob') → Alice, Doug
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Doug')
         },
         '.find + $not + nested': async () => {
           const data = await service.find({
@@ -96,9 +95,9 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // $not nested inside $and → Alice, Doug
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Doug')
         },
         '.find + $not + multi-key': async () => {
           // Carol shares Bob's age but has a different name
@@ -113,10 +112,10 @@ export default (options: RecommendedTestOptions) => {
 
           // NOT (age = 25 AND name = 'Bob') removes only Bob; Carol (age 25 but
           // name != 'Bob') is kept. A per-property inversion would wrongly drop it.
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Carol', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Carol')
+          expect(data[2].name, 'third item').toBe('Doug')
         },
         '.find + $not + operator': async () => {
           const data = await service.find({
@@ -127,9 +126,9 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // NOT (age > 25) → Alice (19), Bob (25); Doug (32) excluded
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
         },
         '.find + $not + $and': async () => {
           // Carol shares Bob's age but has a different name
@@ -144,10 +143,10 @@ export default (options: RecommendedTestOptions) => {
 
           // De Morgan: NOT (name = 'Bob' AND age = 25) → name != 'Bob' OR age != 25,
           // so only Bob is removed and Carol (age 25) is kept.
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Carol', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Carol')
+          expect(data[2].name, 'third item').toBe('Doug')
         },
         '.find + $not + $or': async () => {
           const data = await service.find({
@@ -158,8 +157,8 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // De Morgan: NOT (name = 'Bob' OR name = 'Alice') → Doug
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
         '.find + $not + $or + operator': async () => {
           const data = await service.find({
@@ -171,8 +170,8 @@ export default (options: RecommendedTestOptions) => {
 
           // De Morgan across both laws: NOT (name = 'Bob' OR age < 20) →
           // name != 'Bob' AND age >= 20 → Doug (Bob and Alice (19) excluded)
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
         '.find + $not + $not': async () => {
           const data = await service.find({
@@ -183,8 +182,8 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // double negation is an involution: NOT NOT (age > 25) → age > 25 → Doug
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
       },
       $regex: {
@@ -196,8 +195,8 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // only 'Alice' contains 'li'
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct name').toBe('Alice')
         },
         '.find + $regex + $options': async () => {
           const data = await service.find({
@@ -207,8 +206,8 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // case-insensitive → 'Alice'
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct name').toBe('Alice')
         },
       },
       // `$between` / `$notBetween` take a `[min, max]` tuple and are inclusive
@@ -223,9 +222,9 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // inclusive on both bounds → Alice (19) and Bob (25), not Doug (32)
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
         },
         '.find + $between + no match': async () => {
           const data = await service.find({
@@ -235,7 +234,7 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // range between Bob (25) and Doug (32) matches nobody
-          assert.strictEqual(data.length, 0, 'no results')
+          expect(data.length, 'no results').toBe(0)
         },
         '.find + $between + query': async () => {
           const data = await service.find({
@@ -246,8 +245,8 @@ export default (options: RecommendedTestOptions) => {
           })
 
           // combined with another condition: the range must AND-compose with it
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
       },
       $notBetween: {
@@ -261,8 +260,8 @@ export default (options: RecommendedTestOptions) => {
 
           // both bounds belong to the range, so Alice (19) and Bob (25) are
           // excluded → Doug (32)
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
         '.find + $notBetween + query': async () => {
           const data = await service.find({
@@ -274,8 +273,8 @@ export default (options: RecommendedTestOptions) => {
 
           // combined with another condition: proves the negated range binds to
           // its own property instead of negating the whole query
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Alice')
         },
       },
     } satisfies TestConfig
