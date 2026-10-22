@@ -1,6 +1,5 @@
-import assert from 'node:assert'
 import type { Test } from './declarations.js'
-import { describe, beforeEach, afterEach, beforeAll } from 'vitest'
+import { describe, beforeEach, afterEach, beforeAll, expect } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import { MethodNotAllowed, NotFound } from '@feathersjs/errors'
 import { withOptions } from './utils.js'
@@ -113,40 +112,35 @@ export default (options: MethodTestOptions) => {
         '.find': async () => {
           const data = await service.find()
 
-          assert.ok(Array.isArray(data), 'Data is an array')
-          assert.strictEqual(data.length, 1, 'Got one entry')
+          expect(Array.isArray(data), 'Data is an array').toBeTruthy()
+          expect(data.length, 'Got one entry').toBe(1)
         },
       } satisfies TestConfig<'find'>,
       get: {
         '.get': async () => {
           const data = await service.get(doug[idProp])
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id matches`,
           )
-          assert.strictEqual(data.name, 'Doug', 'data.name matches')
-          assert.strictEqual(data.age, 32, 'data.age matches')
+          expect(data.name, 'data.name matches').toBe('Doug')
+          expect(data.age, 'data.age matches').toBe(32)
         },
         '.get + $select': async () => {
           const data = await service.get(doug[idProp], {
             query: { $select: ['name'] },
           })
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id property matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'Doug', 'data.name matches')
-          assert.ok(!('age' in data), 'data.age is not present')
+          expect(data.name, 'data.name matches').toBe('Doug')
+          expect('age' in data, 'data.age is not present').toBeFalsy()
         },
         '.get + id + query': async () => {
-          await assert.rejects(
-            () => service.get(doug[idProp], { query: { name: 'Tester' } }),
-            NotFound,
-          )
+          await expect(
+            service.get(doug[idProp], { query: { name: 'Tester' } }),
+          ).rejects.toThrow(NotFound)
         },
         '.get + id + query id': async () => {
           const alice = await service.create({
@@ -154,57 +148,50 @@ export default (options: MethodTestOptions) => {
             age: 12,
           })
 
-          await assert.rejects(
-            () =>
-              service.get(doug[idProp], {
-                query: { [idProp]: alice[idProp] },
-              }),
-            NotFound,
-          )
+          await expect(
+            service.get(doug[idProp], {
+              query: { [idProp]: alice[idProp] },
+            }),
+          ).rejects.toThrow(NotFound)
         },
         '.get + NotFound (string)': async () => {
-          await assert.rejects(
-            () => service.get('568225fbfe21222432e836ff'),
+          await expect(service.get('568225fbfe21222432e836ff')).rejects.toThrow(
             NotFound,
           )
         },
         '.get + NotFound (integer)': async () => {
-          await assert.rejects(() => service.get(123141231231), NotFound)
+          await expect(service.get(123141231231)).rejects.toThrow(NotFound)
         },
       },
       remove: {
         '.remove': async () => {
           const data = await service.remove(doug[idProp])
 
-          assert.strictEqual(data.name, 'Doug', 'data.name matches')
+          expect(data.name, 'data.name matches').toBe('Doug')
 
           const items = await service.find({ paginate: false })
-          assert.strictEqual(items.length, 0, 'Got no entries')
+          expect(items.length, 'Got no entries').toBe(0)
         },
         '.remove + $select': async () => {
           const data = await service.remove(doug[idProp], {
             query: { $select: ['name'] },
           })
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id property matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'Doug', 'data.name matches')
-          assert.ok(!('age' in data), 'data.age is not presents')
+          expect(data.name, 'data.name matches').toBe('Doug')
+          expect('age' in data, 'data.age is not presents').toBeFalsy()
         },
         '.remove + id + query': async () => {
-          await assert.rejects(
-            () =>
-              service.remove(doug[idProp], {
-                query: { name: 'Tester' },
-              }),
-            NotFound,
-          )
+          await expect(
+            service.remove(doug[idProp], {
+              query: { name: 'Tester' },
+            }),
+          ).rejects.toThrow(NotFound)
 
           const stillExists = await service.get(doug[idProp])
-          assert.ok(stillExists, 'Doug still exists')
+          expect(stillExists, 'Doug still exists').toBeTruthy()
         },
         '.remove + id + query id': async () => {
           const alice = await service.create({
@@ -212,41 +199,36 @@ export default (options: MethodTestOptions) => {
             age: 12,
           })
 
-          await assert.rejects(
-            () =>
-              service.remove(doug[idProp], {
-                query: { [idProp]: alice[idProp] },
-              }),
-            NotFound,
-          )
+          await expect(
+            service.remove(doug[idProp], {
+              query: { [idProp]: alice[idProp] },
+            }),
+          ).rejects.toThrow(NotFound)
 
           const stillExists = await service.get(doug[idProp])
-          assert.ok(stillExists, 'Doug still exists')
+          expect(stillExists, 'Doug still exists').toBeTruthy()
         },
         '.remove + NotFound (string)': async () => {
-          await assert.rejects(
-            () => service.remove('568225fbfe21222432e836ff'),
-            NotFound,
-          )
+          await expect(
+            service.remove('568225fbfe21222432e836ff'),
+          ).rejects.toThrow(NotFound)
         },
         '.remove + NotFound (integer)': async () => {
-          await assert.rejects(() => service.remove(123141231231), NotFound)
+          await expect(service.remove(123141231231)).rejects.toThrow(NotFound)
         },
         '.remove + multi': async () => {
           await withOptions(service, { multi: false }, () =>
-            assert.rejects(
-              () => service.remove(null),
-              MethodNotAllowed,
+            expect(
+              service.remove(null),
               'remove multi rejects if options.multi is false',
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           await withOptions(service, { multi: ['create', 'patch'] }, () =>
-            assert.rejects(
-              () => service.remove(null),
-              MethodNotAllowed,
+            expect(
+              service.remove(null),
               "remove multi rejects if options.multi does not include 'remove'",
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           await withOptions(service, { multi: ['remove'] }, async () => {
@@ -261,12 +243,12 @@ export default (options: MethodTestOptions) => {
               query: { created: true },
             })
 
-            assert.strictEqual(data.length, 2)
+            expect(data.length).toBe(2)
 
             const names = data.map((person: any) => person.name)
 
-            assert.ok(names.includes('Dave'), 'Dave removed')
-            assert.ok(names.includes('David'), 'David removed')
+            expect(names.includes('Dave'), 'Dave removed').toBeTruthy()
+            expect(names.includes('David'), 'David removed').toBeTruthy()
           })
         },
         '.remove + multi empty result': async () => {
@@ -275,15 +257,14 @@ export default (options: MethodTestOptions) => {
               query: { name: 'NoSuchName' },
             })
 
-            assert.ok(Array.isArray(data), 'data is an array')
-            assert.strictEqual(data.length, 0, 'returned no entries')
+            expect(Array.isArray(data), 'data is an array').toBeTruthy()
+            expect(data.length, 'returned no entries').toBe(0)
 
             const dougAfter = await service.get(doug[idProp])
-            assert.strictEqual(
+            expect(
               dougAfter.name,
-              doug.name,
               'doug untouched by empty-result remove',
-            )
+            ).toBe(doug.name)
           })
         },
         '.remove + multi no pagination': async () => {
@@ -292,10 +273,10 @@ export default (options: MethodTestOptions) => {
           const count = 14
           const defaultPaginate = 10
 
-          assert.ok(
+          expect(
             count > defaultPaginate,
             'count is bigger than default pagination',
-          )
+          ).toBeTruthy()
 
           await withOptions(
             service,
@@ -305,7 +286,7 @@ export default (options: MethodTestOptions) => {
             },
             async () => {
               const emptyItems = await service.find({ paginate: false })
-              assert.strictEqual(emptyItems.length, 0, 'no items before')
+              expect(emptyItems.length, 'no items before').toBe(0)
 
               const createdItems = await service.create(
                 Array.from(Array(count)).map((_, i) => ({
@@ -314,35 +295,22 @@ export default (options: MethodTestOptions) => {
                   created: true,
                 })),
               )
-              assert.strictEqual(
-                createdItems.length,
-                count,
-                `created ${count} items`,
-              )
+              expect(createdItems.length, `created ${count} items`).toBe(count)
 
               const foundItems = await service.find({ paginate: false })
-              assert.strictEqual(
-                foundItems.length,
-                count,
-                `created ${count} items`,
-              )
+              expect(foundItems.length, `created ${count} items`).toBe(count)
 
               const foundPaginatedItems = await service.find({})
-              assert.strictEqual(
+              expect(
                 foundPaginatedItems.data.length,
-                defaultPaginate,
                 'found paginated items',
-              )
+              ).toBe(defaultPaginate)
 
               const allItems = await service.remove(null, {
                 query: { created: true },
               })
 
-              assert.strictEqual(
-                allItems.length,
-                count,
-                `removed all ${count} items`,
-              )
+              expect(allItems.length, `removed all ${count} items`).toBe(count)
             },
           )
         },
@@ -354,18 +322,14 @@ export default (options: MethodTestOptions) => {
 
           const data = await service.update(doug[idProp], originalData)
 
-          assert.deepStrictEqual(
-            originalData,
+          expect(originalData, 'data was not modified').toStrictEqual(
             originalCopy,
-            'data was not modified',
           )
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id matches`,
           )
-          assert.strictEqual(data.name, 'Dougler', 'data.name matches')
-          assert.ok(data.age == null, 'data.age is nullable') // could be null or undefined, based on the adapter
+          expect(data.name, 'data.name matches').toBe('Dougler')
+          expect(data.age == null, 'data.age is nullable').toBeTruthy() // could be null or undefined, based on the adapter
         },
         '.update + $select': async () => {
           const originalData = {
@@ -378,40 +342,32 @@ export default (options: MethodTestOptions) => {
             query: { $select: ['name'] },
           })
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id property matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'Dougler', 'data.name changed')
-          assert.ok(!('age' in data), 'data.age is not present')
+          expect(data.name, 'data.name changed').toBe('Dougler')
+          expect('age' in data, 'data.age is not present').toBeFalsy()
 
           const changed = await service.get(doug[idProp])
 
-          assert.strictEqual(
-            changed.name,
-            originalData.name,
-            'data.name changed',
-          )
-          assert.strictEqual(changed.age, originalData.age, 'data.age changed')
+          expect(changed.name, 'data.name changed').toBe(originalData.name)
+          expect(changed.age, 'data.age changed').toBe(originalData.age)
         },
         '.update + id + query': async () => {
-          await assert.rejects(
-            () =>
-              service.update(
-                doug[idProp],
-                {
-                  name: 'Dougler',
-                },
-                {
-                  query: { name: 'Tester' },
-                },
-              ),
-            NotFound,
-          )
+          await expect(
+            service.update(
+              doug[idProp],
+              {
+                name: 'Dougler',
+              },
+              {
+                query: { name: 'Tester' },
+              },
+            ),
+          ).rejects.toThrow(NotFound)
 
           const unchanged = await service.get(doug[idProp])
-          assert.strictEqual(unchanged.name, doug.name, 'name is still Doug')
+          expect(unchanged.name, 'name is still Doug').toBe(doug.name)
         },
         '.update + id + query id': async () => {
           const alice = await service.create({
@@ -419,55 +375,47 @@ export default (options: MethodTestOptions) => {
             age: 12,
           })
 
-          await assert.rejects(
-            () =>
-              service.update(
-                doug[idProp],
-                {
-                  name: 'Dougler',
-                  age: 33,
-                },
-                {
-                  query: { [idProp]: alice[idProp] },
-                },
-              ),
-            NotFound,
-          )
+          await expect(
+            service.update(
+              doug[idProp],
+              {
+                name: 'Dougler',
+                age: 33,
+              },
+              {
+                query: { [idProp]: alice[idProp] },
+              },
+            ),
+          ).rejects.toThrow(NotFound)
 
           const unchanged = await service.get(doug[idProp])
-          assert.equal(unchanged.name, doug.name, 'name stayed the same')
-          assert.equal(unchanged.age, doug.age, 'age stayed the same')
+          expect(unchanged.name, 'name stayed the same').toBe(doug.name)
+          expect(unchanged.age, 'age stayed the same').toBe(doug.age)
         },
         '.update + NotFound (string)': async () => {
-          await assert.rejects(
-            () =>
-              service.update('568225fbfe21222432e836ff', {
-                name: 'NotFound',
-              }),
-            NotFound,
-          )
+          await expect(
+            service.update('568225fbfe21222432e836ff', {
+              name: 'NotFound',
+            }),
+          ).rejects.toThrow(NotFound)
         },
         '.update + NotFound (integer)': async () => {
-          await assert.rejects(
-            () =>
-              service.update(123141231231, {
-                name: 'NotFound',
-              }),
-            NotFound,
-          )
+          await expect(
+            service.update(123141231231, {
+              name: 'NotFound',
+            }),
+          ).rejects.toThrow(NotFound)
         },
         '.update + query + NotFound': async () => {
           const dave = await service.create({ name: 'Dave' })
 
-          await assert.rejects(
-            () =>
-              service.update(
-                dave[idProp],
-                { name: 'UpdatedDave' },
-                { query: { name: 'NotDave' } },
-              ),
-            NotFound,
-          )
+          await expect(
+            service.update(
+              dave[idProp],
+              { name: 'UpdatedDave' },
+              { query: { name: 'NotDave' } },
+            ),
+          ).rejects.toThrow(NotFound)
         },
       } satisfies TestConfig<'update'>,
       patch: {
@@ -477,37 +425,27 @@ export default (options: MethodTestOptions) => {
 
           const data = await service.patch(doug[idProp], originalData)
 
-          assert.deepStrictEqual(
-            originalData,
+          expect(originalData, 'original data was not modified').toStrictEqual(
             originalCopy,
-            'original data was not modified',
           )
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id matches`,
           )
-          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-          assert.strictEqual(data.age, 32, 'data.age matches')
+          expect(data.name, 'data.name matches').toBe('PatchDoug')
+          expect(data.age, 'data.age matches').toBe(32)
         },
         '.patch + empty data': async () => {
           const data = await service.patch(doug[idProp], {})
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id matches`,
           )
-          assert.strictEqual(data.name, doug.name, 'data.name unchanged')
-          assert.strictEqual(data.age, doug.age, 'data.age unchanged')
+          expect(data.name, 'data.name unchanged').toBe(doug.name)
+          expect(data.age, 'data.age unchanged').toBe(doug.age)
 
           const fetched = await service.get(doug[idProp])
-          assert.strictEqual(
-            fetched.name,
-            doug.name,
-            'persisted name unchanged',
-          )
-          assert.strictEqual(fetched.age, doug.age, 'persisted age unchanged')
+          expect(fetched.name, 'persisted name unchanged').toBe(doug.name)
+          expect(fetched.age, 'persisted age unchanged').toBe(doug.age)
         },
         '.patch + data contains id': async () => {
           const alice = await service.create({ name: 'Alice', age: 12 })
@@ -516,43 +454,34 @@ export default (options: MethodTestOptions) => {
             [idProp]: doug[idProp],
             name: 'PatchDoug',
           })
-          assert.strictEqual(
+          expect(
             matching[idProp].toString(),
-            doug[idProp].toString(),
             'matching id in data: returned id matches',
-          )
-          assert.strictEqual(
-            matching.name,
+          ).toBe(doug[idProp].toString())
+          expect(matching.name, 'matching id in data: name patched').toBe(
             'PatchDoug',
-            'matching id in data: name patched',
           )
 
           const differing = await service.patch(doug[idProp], {
             [idProp]: alice[idProp],
             name: 'PatchDougAgain',
           })
-          assert.strictEqual(
+          expect(
             differing[idProp].toString(),
-            doug[idProp].toString(),
             'differing id in data: url id takes precedence',
-          )
-          assert.strictEqual(
-            differing.name,
+          ).toBe(doug[idProp].toString())
+          expect(differing.name, 'differing id in data: doug was patched').toBe(
             'PatchDougAgain',
-            'differing id in data: doug was patched',
           )
 
           const aliceAfter = await service.get(alice[idProp])
-          assert.strictEqual(
-            aliceAfter.name,
+          expect(aliceAfter.name, 'differing id in data: alice unchanged').toBe(
             'Alice',
-            'differing id in data: alice unchanged',
           )
-          assert.strictEqual(
+          expect(
             aliceAfter.age,
-            12,
             'differing id in data: alice age unchanged',
-          )
+          ).toBe(12)
         },
         '.patch + $select': async () => {
           const originalData = {
@@ -565,16 +494,14 @@ export default (options: MethodTestOptions) => {
             query: { $select: ['name'] },
           })
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id property matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-          assert.ok(!('age' in data), 'data.age is not present')
+          expect(data.name, 'data.name matches').toBe('PatchDoug')
+          expect('age' in data, 'data.age is not present').toBeFalsy()
 
           const changed = await service.get(doug[idProp])
-          assert.strictEqual(changed.age, originalData.age, 'data.age changed')
+          expect(changed.age, 'data.age changed').toBe(originalData.age)
         },
 
         '.patch + $select unchanged': async () => {
@@ -587,34 +514,30 @@ export default (options: MethodTestOptions) => {
             query: { $select: ['name'] },
           })
 
-          assert.strictEqual(
-            data[idProp].toString(),
+          expect(data[idProp].toString(), `${idProp} id property matches`).toBe(
             doug[idProp].toString(),
-            `${idProp} id property matches`,
           )
-          assert.strictEqual(data.name, 'PatchDoug', 'data.name matches')
-          assert.ok(!('age' in data), 'data.age is not present')
+          expect(data.name, 'data.name matches').toBe('PatchDoug')
+          expect('age' in data, 'data.age is not present').toBeFalsy()
 
           const changed = await service.get(doug[idProp])
-          assert.strictEqual(changed.age, doug.age, 'data.age unchanged')
+          expect(changed.age, 'data.age unchanged').toBe(doug.age)
         },
         '.patch + id + query': async () => {
-          await assert.rejects(
-            () =>
-              service.patch(
-                doug[idProp],
-                {
-                  name: 'id patched doug',
-                },
-                {
-                  query: { name: 'Tester' },
-                },
-              ),
-            NotFound,
-          )
+          await expect(
+            service.patch(
+              doug[idProp],
+              {
+                name: 'id patched doug',
+              },
+              {
+                query: { name: 'Tester' },
+              },
+            ),
+          ).rejects.toThrow(NotFound)
 
           const unchanged = await service.get(doug[idProp])
-          assert.strictEqual(unchanged.name, doug.name, 'name is still Doug')
+          expect(unchanged.name, 'name is still Doug').toBe(doug.name)
         },
         '.patch + id + query id': async () => {
           const alice = await service.create({
@@ -622,39 +545,35 @@ export default (options: MethodTestOptions) => {
             age: 12,
           })
 
-          await assert.rejects(
-            () =>
-              service.patch(
-                doug[idProp],
-                {
-                  age: 33,
-                },
-                {
-                  query: { [idProp]: alice[idProp] },
-                },
-              ),
-            NotFound,
-          )
+          await expect(
+            service.patch(
+              doug[idProp],
+              {
+                age: 33,
+              },
+              {
+                query: { [idProp]: alice[idProp] },
+              },
+            ),
+          ).rejects.toThrow(NotFound)
 
           const dougAfter = await service.get(doug[idProp])
 
-          assert.equal(dougAfter.age, doug.age, 'age stayed the same')
+          expect(dougAfter.age, 'age stayed the same').toBe(doug.age)
         },
         '.patch multiple': async () => {
           await withOptions(service, { multi: false }, () =>
-            assert.rejects(
-              () => service.patch(null, {}),
-              MethodNotAllowed,
+            expect(
+              service.patch(null, {}),
               'patch multi rejects if options.multi is false',
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           await withOptions(service, { multi: ['create', 'remove'] }, () =>
-            assert.rejects(
-              () => service.patch(null, {}),
-              MethodNotAllowed,
+            expect(
+              service.patch(null, {}),
               "patch multi rejects if options.multi does not include 'patch'",
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           const dave = await service.create({
@@ -679,9 +598,9 @@ export default (options: MethodTestOptions) => {
               },
             )
 
-            assert.strictEqual(data.length, 2, 'returned two entries')
-            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+            expect(data.length, 'returned two entries').toBe(2)
+            expect(data[0].age, 'First entry age was updated').toBe(2)
+            expect(data[1].age, 'Second entry age was updated').toBe(2)
           })
         },
         '.patch multiple no pagination': async () => {
@@ -690,10 +609,10 @@ export default (options: MethodTestOptions) => {
           const count = 14
           const defaultPaginate = 10
 
-          assert.ok(
+          expect(
             count > defaultPaginate,
             'count is bigger than default pagination',
-          )
+          ).toBeTruthy()
 
           await withOptions(
             service,
@@ -703,7 +622,7 @@ export default (options: MethodTestOptions) => {
             },
             async () => {
               const emptyItems = await service.find({ paginate: false })
-              assert.strictEqual(emptyItems.length, 0, 'no items before')
+              expect(emptyItems.length, 'no items before').toBe(0)
 
               const createdItems = await service.create(
                 Array.from(Array(count)).map((_, i) => ({
@@ -712,25 +631,16 @@ export default (options: MethodTestOptions) => {
                   created: true,
                 })),
               )
-              assert.strictEqual(
-                createdItems.length,
-                count,
-                `created ${count} items`,
-              )
+              expect(createdItems.length, `created ${count} items`).toBe(count)
 
               const foundItems = await service.find({ paginate: false })
-              assert.strictEqual(
-                foundItems.length,
-                count,
-                `created ${count} items`,
-              )
+              expect(foundItems.length, `created ${count} items`).toBe(count)
 
               const foundPaginatedItems = await service.find({})
-              assert.strictEqual(
+              expect(
                 foundPaginatedItems.data.length,
-                defaultPaginate,
                 'found paginated data',
-              )
+              ).toBe(defaultPaginate)
 
               const allItems = await service.patch(
                 null,
@@ -738,11 +648,7 @@ export default (options: MethodTestOptions) => {
                 { query: { created: true } },
               )
 
-              assert.strictEqual(
-                allItems.length,
-                count,
-                `patched all ${count} items`,
-              )
+              expect(allItems.length, `patched all ${count} items`).toBe(count)
             },
           )
         },
@@ -769,9 +675,9 @@ export default (options: MethodTestOptions) => {
               },
             )
 
-            assert.strictEqual(data.length, 2, 'returned two entries')
-            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+            expect(data.length, 'returned two entries').toBe(2)
+            expect(data[0].age, 'First entry age was updated').toBe(2)
+            expect(data[1].age, 'Second entry age was updated').toBe(2)
           })
         },
         '.patch multi query changed': async () => {
@@ -797,9 +703,9 @@ export default (options: MethodTestOptions) => {
               },
             )
 
-            assert.strictEqual(data.length, 2, 'returned two entries')
-            assert.strictEqual(data[0].age, 2, 'First entry age was updated')
-            assert.strictEqual(data[1].age, 2, 'Second entry age was updated')
+            expect(data.length, 'returned two entries').toBe(2)
+            expect(data[0].age, 'First entry age was updated').toBe(2)
+            expect(data[1].age, 'Second entry age was updated').toBe(2)
           })
         },
         '.patch multi + empty data': async () => {
@@ -821,18 +727,18 @@ export default (options: MethodTestOptions) => {
               { query: { created: true } },
             )
 
-            assert.strictEqual(data.length, 2, 'returned two entries')
+            expect(data.length, 'returned two entries').toBe(2)
             const byId = new Map<string, any>(
               data.map((item: any) => [item[idProp].toString(), item]),
             )
             const daveAfter = byId.get(dave[idProp].toString())
             const davidAfter = byId.get(david[idProp].toString())
-            assert.ok(daveAfter, 'dave is included')
-            assert.ok(davidAfter, 'david is included')
-            assert.strictEqual(daveAfter.name, 'Dave', 'dave name unchanged')
-            assert.strictEqual(daveAfter.age, 29, 'dave age unchanged')
-            assert.strictEqual(davidAfter.name, 'David', 'david name unchanged')
-            assert.strictEqual(davidAfter.age, 3, 'david age unchanged')
+            expect(daveAfter, 'dave is included').toBeTruthy()
+            expect(davidAfter, 'david is included').toBeTruthy()
+            expect(daveAfter.name, 'dave name unchanged').toBe('Dave')
+            expect(daveAfter.age, 'dave age unchanged').toBe(29)
+            expect(davidAfter.name, 'david name unchanged').toBe('David')
+            expect(davidAfter.age, 'david age unchanged').toBe(3)
           })
         },
         '.patch multi + empty result': async () => {
@@ -843,15 +749,14 @@ export default (options: MethodTestOptions) => {
               { query: { name: 'NoSuchName' } },
             )
 
-            assert.ok(Array.isArray(data), 'data is an array')
-            assert.strictEqual(data.length, 0, 'returned no entries')
+            expect(Array.isArray(data), 'data is an array').toBeTruthy()
+            expect(data.length, 'returned no entries').toBe(0)
 
             const dougAfter = await service.get(doug[idProp])
-            assert.strictEqual(
+            expect(
               dougAfter.age,
-              doug.age,
               'doug age untouched by empty-result patch',
-            )
+            ).toBe(doug.age)
           })
         },
         '.patch multi + $select': async () => {
@@ -875,18 +780,18 @@ export default (options: MethodTestOptions) => {
               },
             )
 
-            assert.strictEqual(data.length, 2, 'returned two entries')
+            expect(data.length, 'returned two entries').toBe(2)
             for (const item of data) {
-              assert.ok(idProp in item, 'id is present')
-              assert.ok('name' in item, 'name is present')
-              assert.ok(!('age' in item), 'age is not present')
-              assert.ok(!('created' in item), 'created is not present')
+              expect(idProp in item, 'id is present').toBeTruthy()
+              expect('name' in item, 'name is present').toBeTruthy()
+              expect('age' in item, 'age is not present').toBeFalsy()
+              expect('created' in item, 'created is not present').toBeFalsy()
             }
 
             const daveAfter = await service.get(dave[idProp])
             const davidAfter = await service.get(david[idProp])
-            assert.strictEqual(daveAfter.age, 2, 'dave age was patched')
-            assert.strictEqual(davidAfter.age, 2, 'david age was patched')
+            expect(daveAfter.age, 'dave age was patched').toBe(2)
+            expect(davidAfter.age, 'david age was patched').toBe(2)
           })
         },
         // '.patch multi + $sort': async () => {
@@ -907,10 +812,10 @@ export default (options: MethodTestOptions) => {
         //     },
         //   )
 
-        //   assert.strictEqual(patched.length, 3, 'patched three entries')
-        //   assert.strictEqual(patched[0].name, 'C', 'first entry is C')
-        //   assert.strictEqual(patched[1].name, 'B', 'second entry is B')
-        //   assert.strictEqual(patched[2].name, 'A', 'third entry is A')
+        //   expect(patched.length, 'patched three entries').toBe(3)
+        //   expect(patched[0].name, 'first entry is C').toBe('C')
+        //   expect(patched[1].name, 'second entry is B').toBe('B')
+        //   expect(patched[2].name, 'third entry is A').toBe('A')
 
         //   await Promise.all(users.map((user) => service.remove(user[idProp])))
         // },
@@ -930,10 +835,10 @@ export default (options: MethodTestOptions) => {
         //     },
         //   )
 
-        //   assert.strictEqual(patched.length, 2, 'patched two entries')
+        //   expect(patched.length, 'patched two entries').toBe(2)
         //   const names = patched.map((p: any) => p.name)
         //   ;['B', 'C'].forEach((name) => {
-        //     assert.ok(names.includes(name), `patched entry is ${name}`)
+        //     expect(names.includes(name), `patched entry is ${name}`).toBeTruthy()
         //   })
         // },
         // '.patch multi + $limit': async () => {
@@ -952,31 +857,27 @@ export default (options: MethodTestOptions) => {
         //     },
         //   )
 
-        //   assert.strictEqual(patched.length, 2, 'patched two entries')
+        //   expect(patched.length, 'patched two entries').toBe(2)
         //   const names = patched.map((p: any) => p.name)
         //   ;['A', 'B', 'C'].forEach((name) => {
         //     if (names.includes(name)) {
-        //       assert.ok(true, `patched entry is ${name}`)
+        //       expect(true, `patched entry is ${name}`).toBeTruthy()
         //     }
         //   })
         // },
         '.patch + NotFound (string)': async () => {
-          await assert.rejects(
-            () =>
-              service.patch('568225fbfe21222432e836ff', {
-                name: 'PatchDoug',
-              }),
-            NotFound,
-          )
+          await expect(
+            service.patch('568225fbfe21222432e836ff', {
+              name: 'PatchDoug',
+            }),
+          ).rejects.toThrow(NotFound)
         },
         '.patch + NotFound (integer)': async () => {
-          await assert.rejects(
-            () =>
-              service.patch(123141231231, {
-                name: 'PatchDoug',
-              }),
-            NotFound,
-          )
+          await expect(
+            service.patch(123141231231, {
+              name: 'PatchDoug',
+            }),
+          ).rejects.toThrow(NotFound)
         },
       } satisfies TestConfig<'patch'>,
       create: {
@@ -989,13 +890,11 @@ export default (options: MethodTestOptions) => {
 
           const data = await service.create(originalData)
 
-          assert.deepStrictEqual(
-            originalData,
+          expect(originalData, 'original data was not modified').toStrictEqual(
             originalCopy,
-            'original data was not modified',
           )
-          assert.ok(data instanceof Object, 'data is an object')
-          assert.strictEqual(data.name, 'Bill', 'data.name matches')
+          expect(data instanceof Object, 'data is an object').toBeTruthy()
+          expect(data.name, 'data.name matches').toBe('Bill')
         },
         '.create ignores query': async () => {
           const originalData = {
@@ -1008,7 +907,7 @@ export default (options: MethodTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.name, 'Billy', 'data.name matches')
+          expect(data.name, 'data.name matches').toBe('Billy')
         },
         '.create + $select': async () => {
           const originalData = {
@@ -1020,31 +919,29 @@ export default (options: MethodTestOptions) => {
             query: { $select: ['name'] },
           })
 
-          assert.ok(idProp in data, 'data has id')
-          assert.strictEqual(data.name, 'William', 'data.name matches')
-          assert.ok(!('age' in data), 'data.age is not present')
+          expect(idProp in data, 'data has id').toBeTruthy()
+          expect(data.name, 'data.name matches').toBe('William')
+          expect('age' in data, 'data.age is not present').toBeFalsy()
 
           const created = await service.get(data[idProp])
 
-          assert.strictEqual(created.age, 23, 'data.age created')
+          expect(created.age, 'data.age created').toBe(23)
 
           await service.remove(data[idProp])
         },
         '.create multi': async () => {
           await withOptions(service, { multi: false }, () =>
-            assert.rejects(
-              () => service.create([]),
-              MethodNotAllowed,
+            expect(
+              service.create([]),
               'create multi rejects if options.multi is false',
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           await withOptions(service, { multi: ['patch', 'remove'] }, () =>
-            assert.rejects(
-              () => service.create([]),
-              MethodNotAllowed,
+            expect(
+              service.create([]),
               "create multi rejects if options.multi does not include 'create'",
-            ),
+            ).rejects.toThrow(MethodNotAllowed),
           )
 
           await withOptions(
@@ -1064,11 +961,17 @@ export default (options: MethodTestOptions) => {
                 },
               ])
 
-              assert.ok(Array.isArray(data), 'data is an array')
-              assert.ok(typeof data[0][idProp] !== 'undefined', 'id is set')
-              assert.strictEqual(data[0].name, 'Gerald', 'first name matches')
-              assert.ok(typeof data[1][idProp] !== 'undefined', 'id is set')
-              assert.strictEqual(data[1].name, 'Herald', 'second name macthes')
+              expect(Array.isArray(data), 'data is an array').toBeTruthy()
+              expect(
+                typeof data[0][idProp] !== 'undefined',
+                'id is set',
+              ).toBeTruthy()
+              expect(data[0].name, 'first name matches').toBe('Gerald')
+              expect(
+                typeof data[1][idProp] !== 'undefined',
+                'id is set',
+              ).toBeTruthy()
+              expect(data[1].name, 'second name macthes').toBe('Herald')
             },
           )
         },
@@ -1078,15 +981,11 @@ export default (options: MethodTestOptions) => {
 
             const data = await service.create([])
 
-            assert.ok(Array.isArray(data), 'data is an array')
-            assert.strictEqual(data.length, 0, 'returned no entries')
+            expect(Array.isArray(data), 'data is an array').toBeTruthy()
+            expect(data.length, 'returned no entries').toBe(0)
 
             const after = await service.find({ paginate: false })
-            assert.strictEqual(
-              after.length,
-              before.length,
-              'no records were created',
-            )
+            expect(after.length, 'no records were created').toBe(before.length)
           })
         },
       } satisfies TestConfig<'create'>,

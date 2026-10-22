@@ -1,5 +1,4 @@
-import assert from 'node:assert'
-import { describe, beforeEach, afterEach } from 'vitest'
+import { describe, beforeEach, afterEach, expect } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import type { Test } from './declarations.js'
 import { withOptions } from './utils.js'
@@ -93,16 +92,16 @@ export default (options: SyntaxTestOptions) => {
           const params = { query: { name: 'Alice' } }
           const data = await service.find(params)
 
-          assert.ok(Array.isArray(data), 'data is an array')
-          assert.strictEqual(data.length, 1, 'data has one entry')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
+          expect(Array.isArray(data), 'data is an array').toBeTruthy()
+          expect(data.length, 'data has one entry').toBe(1)
+          expect(data[0].name, 'correct name').toBe('Alice')
         },
         '.find + equal multiple': async () => {
           const data = await service.find({
             query: { name: 'Alice', age: 20 },
           })
 
-          assert.strictEqual(data.length, 0, 'no results')
+          expect(data.length, 'no results').toBe(0)
         },
       } satisfies TestConfig<'general'>,
       filters: {
@@ -113,10 +112,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3)
-          assert.strictEqual(data[0].name, 'Alice')
-          assert.strictEqual(data[1].name, 'Bob')
-          assert.strictEqual(data[2].name, 'Doug')
+          expect(data.length).toBe(3)
+          expect(data[0].name).toBe('Alice')
+          expect(data[1].name).toBe('Bob')
+          expect(data[2].name).toBe('Doug')
 
           data = await service.find({
             query: {
@@ -124,10 +123,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Alice', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Doug')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Alice')
         },
         '.find + $sort + string': async () => {
           let data = await service.find({
@@ -136,10 +135,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Doug')
 
           data = await service.find({
             query: {
@@ -147,10 +146,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Alice', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Doug')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Alice')
         },
         '.find + $limit': async () => {
           const data = await service.find({
@@ -159,7 +158,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(2)
         },
         '.find + $limit 0': async () => {
           const data = await service.find({
@@ -168,7 +167,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 0, 'data array is empty')
+          expect(data.length, 'data array is empty').toBe(0)
         },
         '.find + $skip': async () => {
           const data = await service.find({
@@ -178,9 +177,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Bob', 'first user')
-          assert.strictEqual(data[1].name, 'Doug', 'second user')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first user').toBe('Bob')
+          expect(data[1].name, 'second user').toBe('Doug')
         },
         '.find + $sort + $limit + $skip': async () => {
           const data = await service.find({
@@ -192,12 +191,8 @@ export default (options: SyntaxTestOptions) => {
           })
 
           // sorted asc: Alice, Bob, Doug → skip 1 → Bob, Doug → limit 1 → Bob
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(
-            data[0].name,
-            'Bob',
-            'correct order: sort → skip → limit',
-          )
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct order: sort → skip → limit').toBe('Bob')
         },
         '.find + $select': async () => {
           const data = await service.find({
@@ -207,10 +202,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.ok(idProp in data[0], 'data has id')
-          assert.strictEqual(data[0].name, 'Alice', 'correct name')
-          assert.strictEqual(data[0].age, undefined, 'age was not selected')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(idProp in data[0], 'data has id').toBeTruthy()
+          expect(data[0].name, 'correct name').toBe('Alice')
+          expect(data[0].age, 'age was not selected').toBe(undefined)
         },
       } satisfies TestConfig<'filters'>,
       operators: {
@@ -222,9 +217,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
         },
         '.find + $in': async () => {
           const data = await service.find({
@@ -236,9 +231,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
         },
         '.find + $in empty': async () => {
           const data = await service.find({
@@ -247,8 +242,8 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.ok(Array.isArray(data), 'data is an array')
-          assert.strictEqual(data.length, 0, 'no items match $in: []')
+          expect(Array.isArray(data), 'data is an array').toBeTruthy()
+          expect(data.length, 'no items match $in: []').toBe(0)
         },
         '.find + $in + null': async () => {
           await service.create({ name: 'Nully', age: null })
@@ -259,12 +254,8 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(
-            data.length,
-            1,
-            'correct data.length for $in: [null]',
-          )
-          assert.strictEqual(data[0].name, 'Nully', 'correct item')
+          expect(data.length, 'correct data.length for $in: [null]').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Nully')
 
           data = await service.find({
             query: {
@@ -273,13 +264,9 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(
-            data.length,
-            2,
-            'correct data.length for $in: [null, 25]',
-          )
-          assert.strictEqual(data[0].name, 'Bob', 'first item')
-          assert.strictEqual(data[1].name, 'Nully', 'second item')
+          expect(data.length, 'correct data.length for $in: [null, 25]').toBe(2)
+          expect(data[0].name, 'first item').toBe('Bob')
+          expect(data[1].name, 'second item').toBe('Nully')
         },
         '.find + $nin': async () => {
           const data = await service.find({
@@ -290,8 +277,8 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Doug', 'correct item')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct item').toBe('Doug')
         },
         '.find + $nin empty': async () => {
           const data = await service.find({
@@ -301,10 +288,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'all items match $nin: []')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'all items match $nin: []').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Doug')
         },
         '.find + $nin + null': async () => {
           await service.create({ name: 'Nully', age: null })
@@ -316,14 +303,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(
-            data.length,
-            3,
-            'correct data.length for $nin: [null]',
-          )
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'correct data.length for $nin: [null]').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Doug')
 
           data = await service.find({
             query: {
@@ -332,13 +315,11 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(
-            data.length,
+          expect(data.length, 'correct data.length for $nin: [null, 25]').toBe(
             2,
-            'correct data.length for $nin: [null, 25]',
           )
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Doug')
         },
         '.find + $nin matches null': async () => {
           // `null` is not in the list, so the item without an age matches, as in MongoDB
@@ -351,10 +332,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
-          assert.strictEqual(data[2].name, 'Nully', 'third item')
+          expect(data.length, 'correct data.length').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Doug')
+          expect(data[2].name, 'third item').toBe('Nully')
         },
         '.find + $lt': async () => {
           const data = await service.find({
@@ -365,7 +346,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(2)
         },
         '.find + $lte': async () => {
           const data = await service.find({
@@ -376,7 +357,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(2)
         },
         '.find + $gt': async () => {
           const data = await service.find({
@@ -387,7 +368,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 1, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(1)
         },
         '.find + $gte': async () => {
           const data = await service.find({
@@ -398,7 +379,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(2)
         },
         '.find + $ne': async () => {
           const data = await service.find({
@@ -409,7 +390,7 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
+          expect(data.length, 'correct data.length').toBe(2)
         },
         '.find + $ne matches null': async () => {
           // `null` is not 25, so the item without an age matches, as in MongoDB
@@ -422,10 +403,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(data.length, 3, 'correct data.length for $ne: 25')
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Doug', 'second item')
-          assert.strictEqual(data[2].name, 'Nully', 'third item')
+          expect(data.length, 'correct data.length for $ne: 25').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Doug')
+          expect(data[2].name, 'third item').toBe('Nully')
 
           data = await service.find({
             query: {
@@ -434,14 +415,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(
-            data.length,
-            3,
-            'correct data.length for $ne: null',
-          )
-          assert.strictEqual(data[0].name, 'Alice', 'first item')
-          assert.strictEqual(data[1].name, 'Bob', 'second item')
-          assert.strictEqual(data[2].name, 'Doug', 'third item')
+          expect(data.length, 'correct data.length for $ne: null').toBe(3)
+          expect(data[0].name, 'first item').toBe('Alice')
+          expect(data[1].name, 'second item').toBe('Bob')
+          expect(data[2].name, 'third item').toBe('Doug')
         },
         '.find + $gt + $lt + $sort': async () => {
           const params = {
@@ -456,9 +433,9 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first user')
-          assert.strictEqual(data[1].name, 'Bob', 'second user')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first user').toBe('Alice')
+          expect(data[1].name, 'second user').toBe('Bob')
         },
         '.find + $or nested + $sort': async () => {
           const params = {
@@ -478,9 +455,9 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 2, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'first user')
-          assert.strictEqual(data[1].name, 'Doug', 'second user')
+          expect(data.length, 'correct data.length').toBe(2)
+          expect(data[0].name, 'first user').toBe('Alice')
+          expect(data[1].name, 'second user').toBe('Doug')
         },
         '.find + $and': async () => {
           const params = {
@@ -492,8 +469,8 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct user')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct user').toBe('Alice')
         },
         '.find + $and + $or': async () => {
           const params = {
@@ -505,8 +482,8 @@ export default (options: SyntaxTestOptions) => {
 
           const data = await service.find(params)
 
-          assert.strictEqual(data.length, 1, 'correct data.length')
-          assert.strictEqual(data[0].name, 'Alice', 'correct user')
+          expect(data.length, 'correct data.length').toBe(1)
+          expect(data[0].name, 'correct user').toBe('Alice')
         },
       } satisfies TestConfig<'operators'>,
       'params.adapter': {
@@ -517,8 +494,8 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(page.limit, 3, 'correct limit')
-          assert.strictEqual(page.skip, 0, 'correct skip')
+          expect(page.limit, 'correct limit').toBe(3)
+          expect(page.skip, 'correct skip').toBe(0)
         },
         'params.adapter + multi': async () => {
           const items = [
@@ -538,16 +515,15 @@ export default (options: SyntaxTestOptions) => {
           }
           const users = await service.create(items, multiParams)
 
-          assert.strictEqual(users.length, 2, 'created two items')
+          expect(users.length, 'created two items').toBe(2)
 
           await service.remove(users[0][idProp])
           await service.remove(users[1][idProp])
-          await assert.rejects(
-            () => service.patch(null, { age: 2 }, multiParams),
-            {
-              message: 'Can not patch multiple entries',
-            },
-          )
+          await expect(
+            service.patch(null, { age: 2 }, multiParams),
+          ).rejects.toMatchObject({
+            message: 'Can not patch multiple entries',
+          })
         },
       } satisfies TestConfig<'params.adapter'>,
     }
@@ -567,10 +543,10 @@ export default (options: SyntaxTestOptions) => {
             query: { $sort: { name: -1 } },
           })
 
-          assert.strictEqual(page.total, 3, 'correct total')
-          assert.strictEqual(page.limit, 1, 'correct limit')
-          assert.strictEqual(page.skip, 0, 'correct skip')
-          assert.strictEqual(page.data[0].name, 'Doug', 'correct user')
+          expect(page.total, 'correct total').toBe(3)
+          expect(page.limit, 'correct limit').toBe(1)
+          expect(page.skip, 'correct skip').toBe(0)
+          expect(page.data[0].name, 'correct user').toBe('Doug')
         },
         '.find + paginate + query': async () => {
           const page = await service.find({
@@ -580,10 +556,10 @@ export default (options: SyntaxTestOptions) => {
             },
           })
 
-          assert.strictEqual(page.total, 1, 'correct total')
-          assert.strictEqual(page.limit, 1, 'correct limit')
-          assert.strictEqual(page.skip, 0, 'correct skip')
-          assert.strictEqual(page.data[0].name, 'Doug', 'correct user')
+          expect(page.total, 'correct total').toBe(1)
+          expect(page.limit, 'correct limit').toBe(1)
+          expect(page.skip, 'correct skip').toBe(0)
+          expect(page.data[0].name, 'correct user').toBe('Doug')
         },
         '.find + paginate + $limit + $skip': async () => {
           const params = {
@@ -596,30 +572,30 @@ export default (options: SyntaxTestOptions) => {
 
           const page = await service.find(params)
 
-          assert.strictEqual(page.total, 3, 'correct total')
-          assert.strictEqual(page.limit, 2, 'correct limit')
-          assert.strictEqual(page.skip, 1, 'correct skip')
-          assert.strictEqual(page.data[0].name, 'Bob')
-          assert.strictEqual(page.data[1].name, 'Alice')
+          expect(page.total, 'correct total').toBe(3)
+          expect(page.limit, 'correct limit').toBe(2)
+          expect(page.skip, 'correct skip').toBe(1)
+          expect(page.data[0].name).toBe('Bob')
+          expect(page.data[1].name).toBe('Alice')
         },
         '.find + paginate + $limit 0': async () => {
           const page = await service.find({
             query: { $limit: 0 },
           })
 
-          assert.strictEqual(page.total, 3, 'correct total')
-          assert.strictEqual(page.data.length, 0, 'data array is empty')
+          expect(page.total, 'correct total').toBe(3)
+          expect(page.data.length, 'data array is empty').toBe(0)
         },
         '.find + paginate + params': async () => {
           const page = await service.find({ paginate: { default: 3 } })
 
-          assert.strictEqual(page.limit, 3, 'correct limit')
-          assert.strictEqual(page.skip, 0, 'correct skip')
+          expect(page.limit, 'correct limit').toBe(3)
+          expect(page.skip, 'correct skip').toBe(0)
 
           const results = await service.find({ paginate: false })
 
-          assert.ok(Array.isArray(results), 'results is an array')
-          assert.strictEqual(results.length, 3, 'correct results length')
+          expect(Array.isArray(results), 'results is an array').toBeTruthy()
+          expect(results.length, 'correct results length').toBe(3)
         },
       }
 

@@ -8,7 +8,7 @@ import syntaxTests from './syntax.js'
 import type { AdapterTestNameRecommended } from './recommended.js'
 import recommendedTests from './recommended.js'
 import type { RecommendedOperator } from './declarations.js'
-import { describe, it, beforeAll, assert } from 'vitest'
+import { describe, it, beforeAll, expect } from 'vitest'
 
 export type TestSuiteOptions = {
   app: Application
@@ -82,10 +82,10 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
         const service = app.service(serviceName)
 
         let items = await service.find({ paginate: false })
-        assert.ok(
+        expect(
           Array.isArray(items),
           'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
-        )
+        ).toBeTruthy()
 
         await Promise.all(
           items.map((item: any) => service.remove(item[idProp])),
@@ -97,45 +97,42 @@ export const defineTestSuite = (defineOptions?: DefineTestSuiteOptions) => {
           age: 32,
         })
 
-        assert.ok(
+        expect(
           doug[idProp] !== null,
           `simple 'create' failed (no ${idProp}). Before you start to test the adapter make sure simple create works.`,
-        )
-        assert.strictEqual(
+        ).toBeTruthy()
+        expect(
           doug.name,
-          'Doug',
           "simple 'create' failed (no name). Before you start to test the adapter make sure simple create works.",
-        )
-        assert.strictEqual(
+        ).toBe('Doug')
+        expect(
           doug.age,
-          32,
           "simple 'create' failed (no age). Before you start to test the adapter make sure simple create works.",
-        )
+        ).toBe(32)
 
         // test delete
 
         items = await service.find({ paginate: false })
-        assert.ok(
+        expect(
           Array.isArray(items),
           'find with paginate:false did not return an array. Before you start to test the adapter make sure simple find works.',
-        )
-        assert.strictEqual(
+        ).toBeTruthy()
+        expect(
           items.length,
-          1,
           'find should return an item. Before you start to test the adapter make sure simple find works.',
-        )
-        assert.ok(
+        ).toBe(1)
+        expect(
           idProp in items[0],
           `'find' should return an item with ${idProp}. Before you start to test the adapter make sure simple find works.`,
-        )
+        ).toBeTruthy()
         await Promise.all(
           items.map((item: any) => service.remove(item[idProp])),
         )
         const itemsAfterRemove = await service.find({ paginate: false })
-        assert.ok(
+        expect(
           itemsAfterRemove.length === 0,
           "'remove' does not work. Before you start to test the adapter make sure simple remove works.",
-        )
+        ).toBeTruthy()
       })
 
       basicTests({ test, app, serviceName, idProp })
