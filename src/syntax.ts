@@ -29,11 +29,13 @@ type SyntaxTests = {
     | '.find + $nin'
     | '.find + $nin empty'
     | '.find + $nin + null'
+    | '.find + $nin matches null'
     | '.find + $lt'
     | '.find + $lte'
     | '.find + $gt'
     | '.find + $gte'
     | '.find + $ne'
+    | '.find + $ne matches null'
     | '.find + $gt + $lt + $sort'
     | '.find + $or nested + $sort'
     | '.find + $and'
@@ -338,6 +340,22 @@ export default (options: SyntaxTestOptions) => {
           assert.strictEqual(data[0].name, 'Alice', 'first item')
           assert.strictEqual(data[1].name, 'Doug', 'second item')
         },
+        '.find + $nin matches null': async () => {
+          // `null` is not in the list, so the item without an age matches, as in MongoDB
+          await service.create({ name: 'Nully', age: null })
+
+          const data = await service.find({
+            query: {
+              age: { $nin: [25] },
+              $sort: { name: 1 },
+            },
+          })
+
+          assert.strictEqual(data.length, 3, 'correct data.length')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Doug', 'second item')
+          assert.strictEqual(data[2].name, 'Nully', 'third item')
+        },
         '.find + $lt': async () => {
           const data = await service.find({
             query: {
@@ -392,6 +410,38 @@ export default (options: SyntaxTestOptions) => {
           })
 
           assert.strictEqual(data.length, 2, 'correct data.length')
+        },
+        '.find + $ne matches null': async () => {
+          // `null` is not 25, so the item without an age matches, as in MongoDB
+          await service.create({ name: 'Nully', age: null })
+
+          let data = await service.find({
+            query: {
+              age: { $ne: 25 },
+              $sort: { name: 1 },
+            },
+          })
+
+          assert.strictEqual(data.length, 3, 'correct data.length for $ne: 25')
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Doug', 'second item')
+          assert.strictEqual(data[2].name, 'Nully', 'third item')
+
+          data = await service.find({
+            query: {
+              age: { $ne: null },
+              $sort: { name: 1 },
+            },
+          })
+
+          assert.strictEqual(
+            data.length,
+            3,
+            'correct data.length for $ne: null',
+          )
+          assert.strictEqual(data[0].name, 'Alice', 'first item')
+          assert.strictEqual(data[1].name, 'Bob', 'second item')
+          assert.strictEqual(data[2].name, 'Doug', 'third item')
         },
         '.find + $gt + $lt + $sort': async () => {
           const params = {
