@@ -1,5 +1,5 @@
 import type { Test } from './declarations.js'
-import { describe, beforeEach, afterEach, beforeAll, expect } from 'vitest'
+import { describe, beforeEach, afterEach, beforeAll, expect, vi } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
 import { GeneralError, MethodNotAllowed, NotFound } from '@feathersjs/errors'
 import { withOptions } from './utils.js'
@@ -109,26 +109,6 @@ export default (options: MethodTestOptions) => {
     }
 
     afterEach(clean)
-
-    /** The service, with a read that fails as if the store went away. */
-    const withFailingGet = () =>
-      Object.assign(Object.create(service), {
-        _get: () => Promise.reject(new GeneralError('Store gone')),
-      })
-
-    /**
-     * A write that reads its item first must fail with that read's error, not as NotFound: a
-     * store that is down is no missing item. A write that doesn't read succeeds.
-     */
-    async function expectReadErrorPassedOn(write: Promise<unknown>) {
-      const error = await write.then(
-        () => undefined,
-        (error: unknown) => error,
-      )
-      if (error === undefined) return
-      expect(error).toBeInstanceOf(GeneralError)
-      expect((error as Error).message).toBe('Store gone')
-    }
 
     const config = {
       find: {
@@ -240,9 +220,23 @@ export default (options: MethodTestOptions) => {
           await expect(service.remove(123141231231)).rejects.toThrow(NotFound)
         },
         '.remove + id + failing get': async () => {
-          await expectReadErrorPassedOn(
-            service.remove.call(withFailingGet(), doug[idProp]),
-          )
+          // the store goes away while the adapter reads the item
+          const _get = vi.fn(async () => {
+            throw new GeneralError('Store gone')
+          })
+          const failing = Object.assign(Object.create(service), { _get })
+
+          const result = await service.remove
+            .call(failing, doug[idProp])
+            .catch((error: unknown) => error)
+
+          if (_get.mock.calls.length > 0) {
+            // a store that is down is no missing item
+            expect(result).toBeInstanceOf(GeneralError)
+            expect(result.message).toBe('Store gone')
+          } else {
+            expect(result.name).toBe('Doug')
+          }
         },
         '.remove + multi': async () => {
           await withOptions(service, { multi: false }, () =>
@@ -435,12 +429,23 @@ export default (options: MethodTestOptions) => {
           ).rejects.toThrow(NotFound)
         },
         '.update + id + failing get': async () => {
-          await expectReadErrorPassedOn(
-            service.update.call(withFailingGet(), doug[idProp], {
-              name: 'Dougler',
-              age: 33,
-            }),
-          )
+          // the store goes away while the adapter reads the item
+          const _get = vi.fn(async () => {
+            throw new GeneralError('Store gone')
+          })
+          const failing = Object.assign(Object.create(service), { _get })
+
+          const result = await service.update
+            .call(failing, doug[idProp], { name: 'Dougler', age: 33 })
+            .catch((error: unknown) => error)
+
+          if (_get.mock.calls.length > 0) {
+            // a store that is down is no missing item
+            expect(result).toBeInstanceOf(GeneralError)
+            expect(result.message).toBe('Store gone')
+          } else {
+            expect(result.name).toBe('Dougler')
+          }
         },
         '.update + query + NotFound': async () => {
           const dave = await service.create({ name: 'Dave' })
@@ -916,11 +921,23 @@ export default (options: MethodTestOptions) => {
           ).rejects.toThrow(NotFound)
         },
         '.patch + id + failing get': async () => {
-          await expectReadErrorPassedOn(
-            service.patch.call(withFailingGet(), doug[idProp], {
-              name: 'PatchDoug',
-            }),
-          )
+          // the store goes away while the adapter reads the item
+          const _get = vi.fn(async () => {
+            throw new GeneralError('Store gone')
+          })
+          const failing = Object.assign(Object.create(service), { _get })
+
+          const result = await service.patch
+            .call(failing, doug[idProp], { name: 'PatchDoug' })
+            .catch((error: unknown) => error)
+
+          if (_get.mock.calls.length > 0) {
+            // a store that is down is no missing item
+            expect(result).toBeInstanceOf(GeneralError)
+            expect(result.message).toBe('Store gone')
+          } else {
+            expect(result.name).toBe('PatchDoug')
+          }
         },
       } satisfies TestConfig<'patch'>,
       create: {
