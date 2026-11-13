@@ -1,7 +1,7 @@
 import type { Test } from './declarations.js'
 import { describe, beforeEach, afterEach, beforeAll, expect } from 'vitest'
 import type { Application } from '@feathersjs/feathers'
-import { MethodNotAllowed, NotFound } from '@feathersjs/errors'
+import { GeneralError, MethodNotAllowed, NotFound } from '@feathersjs/errors'
 import { withOptions } from './utils.js'
 
 type MethodTestOptions = {
@@ -27,6 +27,7 @@ type MethodTests = {
     | '.remove + id + query id'
     | '.remove + NotFound (string)'
     | '.remove + NotFound (integer)'
+    | '.remove + id + failing get'
     | '.remove + multi'
     | '.remove + multi empty result'
     | '.remove + multi no pagination'
@@ -38,6 +39,7 @@ type MethodTests = {
     | '.update + NotFound (string)'
     | '.update + NotFound (integer)'
     | '.update + query + NotFound'
+    | '.update + id + failing get'
   patch:
     | '.patch'
     | '.patch + empty data'
@@ -58,6 +60,7 @@ type MethodTests = {
     // | '.patch multi + $limit'
     | '.patch + NotFound (string)'
     | '.patch + NotFound (integer)'
+    | '.patch + id + failing get'
   create:
     | '.create'
     | '.create + $select'
@@ -106,6 +109,26 @@ export default (options: MethodTestOptions) => {
     }
 
     afterEach(clean)
+
+    /** The service, with a read that fails as if the store went away. */
+    const withFailingGet = () =>
+      Object.assign(Object.create(service), {
+        _get: () => Promise.reject(new GeneralError('Store gone')),
+      })
+
+    /**
+     * A write that reads its item first must fail with that read's error, not as NotFound: a
+     * store that is down is no missing item. A write that doesn't read succeeds.
+     */
+    async function expectReadErrorPassedOn(write: Promise<unknown>) {
+      const error = await write.then(
+        () => undefined,
+        (error: unknown) => error,
+      )
+      if (error === undefined) return
+      expect(error).toBeInstanceOf(GeneralError)
+      expect((error as Error).message).toBe('Store gone')
+    }
 
     const config = {
       find: {
@@ -215,6 +238,11 @@ export default (options: MethodTestOptions) => {
         },
         '.remove + NotFound (integer)': async () => {
           await expect(service.remove(123141231231)).rejects.toThrow(NotFound)
+        },
+        '.remove + id + failing get': async () => {
+          await expectReadErrorPassedOn(
+            service.remove.call(withFailingGet(), doug[idProp]),
+          )
         },
         '.remove + multi': async () => {
           await withOptions(service, { multi: false }, () =>
@@ -405,6 +433,14 @@ export default (options: MethodTestOptions) => {
               name: 'NotFound',
             }),
           ).rejects.toThrow(NotFound)
+        },
+        '.update + id + failing get': async () => {
+          await expectReadErrorPassedOn(
+            service.update.call(withFailingGet(), doug[idProp], {
+              name: 'Dougler',
+              age: 33,
+            }),
+          )
         },
         '.update + query + NotFound': async () => {
           const dave = await service.create({ name: 'Dave' })
@@ -878,6 +914,13 @@ export default (options: MethodTestOptions) => {
               name: 'PatchDoug',
             }),
           ).rejects.toThrow(NotFound)
+        },
+        '.patch + id + failing get': async () => {
+          await expectReadErrorPassedOn(
+            service.patch.call(withFailingGet(), doug[idProp], {
+              name: 'PatchDoug',
+            }),
+          )
         },
       } satisfies TestConfig<'patch'>,
       create: {
